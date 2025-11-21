@@ -16,7 +16,7 @@ export default function handleTouch(
 
 		if (finalTapResolver) {
 			finalTapResolver(false);
-			clearTimeout(finalTapResolver);
+			clearTimeout(finalTapResolverTimeout);
 			finalTapResolver = null;
 		}
 		isCurrentTapInvalid = e.touches.length > 1; // Only allow single-finger taps.
