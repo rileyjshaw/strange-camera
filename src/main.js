@@ -89,15 +89,13 @@ async function main() {
 
 	async function exportHighRes() {
 		displayShader.pause();
-		const scaleFactor = Math.pow(2, Math.floor(nShuffles) + 1);
 		let exportWidth, exportHeight;
-
 		if (imageInput) {
-			exportWidth = imageInput.naturalWidth * scaleFactor;
-			exportHeight = imageInput.naturalHeight * scaleFactor;
+			exportWidth = imageInput.naturalWidth;
+			exportHeight = imageInput.naturalHeight;
 		} else {
-			exportWidth = videoInput.videoWidth * scaleFactor;
-			exportHeight = videoInput.videoHeight * scaleFactor;
+			exportWidth = videoInput.videoWidth;
+			exportHeight = videoInput.videoHeight;
 		}
 
 		if (exportWidth > MAX_EXPORT_DIMENSION || exportHeight > MAX_EXPORT_DIMENSION) {
@@ -113,11 +111,14 @@ async function main() {
 		const { width: originalWidth, height: originalHeight } = displayShader.canvas;
 		displayShader.canvas.width = exportWidth;
 		displayShader.canvas.height = exportHeight;
-		displayShader.draw(); // TODO: Needs publish for this to work.
+		const gl = displayShader.canvas.getContext('webgl') || displayShader.canvas.getContext('webgl2');
+		gl.viewport(0, 0, exportWidth, exportHeight);
+		displayShader.draw();
 		// TODO: Include a message argument for mobile.
 		await displayShader.save('odd-camera', 'camera.rileyjshaw.com');
 		displayShader.canvas.width = originalWidth;
 		displayShader.canvas.height = originalHeight;
+		gl.viewport(0, 0, originalWidth, originalHeight);
 		play();
 	}
 
