@@ -44,6 +44,11 @@ function attachControls(scene, onMove) {
 	const touchCleanup = handleTouch(document.body, {
 		onMove(direction, diff, nTouches, initialX, initialY) {
 			if (nTouches > 1) return;
+
+			// IMPORTANT: “y” actually means “the longer axis”. If the viewport
+			// is landscape, flip the direction.
+			if (width > height) direction = direction === 'x' ? 'y' : 'x';
+
 			let group;
 			if (direction === 'x') {
 				group = 1 + Math.floor((initialY * yControlsLength) / height);

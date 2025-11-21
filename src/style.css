@@ -7,10 +7,14 @@
 }
 
 body {
+	--color-light: #e7e5e4;
+	--color-dark: #0c0a09;
+	--settings-margin: 30px;
+	--visual-control-size: 33;
 	margin: 0;
 	overflow: hidden;
-	color: #fff;
-	background: #000;
+	color: var(--color-light);
+	background: var(--color-dark);
 	font-family: 'TRJNDaVinci', sans-serif;
 }
 
@@ -20,7 +24,6 @@ body {
 	z-index: 2;
 	display: flex;
 	justify-content: center;
-	text-align: center;
 	width: 100%;
 	opacity: 0;
 	animation: fadeIn 0.5s ease 0.5s forwards;
@@ -29,6 +32,7 @@ body {
 #instructions {
 	padding-bottom: 1em;
 	text-wrap: balance;
+	text-align: center;
 }
 
 #shutter {
@@ -47,12 +51,12 @@ body {
 	width: 68px;
 	border-radius: 50%;
 	cursor: pointer;
-	background: #fff;
+	background: var(--color-light);
 	transition: transform 0.2s ease;
 }
 
 #shutter button:hover:not(:active) {
-	background: #fff;
+	background: var(--color-light);
 	transform: scale(1.04);
 }
 
@@ -71,7 +75,7 @@ body {
 
 canvas {
 	z-index: 1;
-	background: #000;
+	background: var(--color-dark);
 }
 
 .flipped canvas {
@@ -88,15 +92,16 @@ video {
 #settings {
 	position: fixed;
 	inset: 0;
-	margin: 40px;
-	color: #0c0a09;
-	background: #e7e5e4;
+	margin: var(--settings-margin);
+	overflow: auto;
+	color: var(--color-dark);
+	background: var(--color-light);
 	border-radius: 6px;
 	opacity: 0;
-	visibility: hidden;
+	transition: opacity 0.1s ease;
 }
 
-#settings.populated {
+body.settings-open #settings.populated {
 	opacity: 0.8;
 }
 
@@ -104,13 +109,90 @@ body.settings-open #shutter {
 	display: none;
 }
 
-body.settings-open #settings {
-	visibility: visible;
-}
-
 #settings h2 {
 	font-weight: normal;
 	font-size: 2.5rem;
+	text-align: center;
+}
+
+.visual-controls {
+	display: flex;
+	justify-content: space-evenly;
+	counter-reset: item;
+	text-align: center;
+	& > div {
+		display: flex;
+		flex-direction: column;
+		justify-content: space-around;
+		align-items: center;
+		height: calc(var(--visual-control-size) * 1dvh);
+		width: calc(var(--visual-control-size) * 1dvw);
+		border: 1px solid currentColor;
+		border-radius: 6px;
+		& > div {
+			inline-size: calc(100% - 30px);
+			position: relative;
+			counter-increment: item;
+			border-inline: 1px solid currentColor;
+			&::before {
+				content: '';
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				display: block;
+				inline-size: 100%;
+				block-size: 1px;
+				background: currentColor;
+			}
+			&::after {
+				content: counter(item);
+				position: relative;
+				display: inline-grid;
+				width: 2em;
+				height: 2em;
+				place-items: center;
+				border: 1px solid currentColor;
+				border-radius: 50%;
+				background: var(--color-light);
+				writing-mode: horizontal-tb;
+			}
+		}
+	}
+}
+
+/* Wowww. */
+#controls-y {
+	writing-mode: vertical-lr;
+}
+@media (aspect-ratio < 1) {
+	#controls-x {
+		writing-mode: vertical-lr;
+	}
+	#controls-y {
+		writing-mode: horizontal-tb;
+	}
+}
+
+#controls-list-move {
+	list-style: none;
+	counter-reset: item;
+	padding: 2em 0 0 calc(((100 - var(--visual-control-size) * 2) * 1dvw - var(--settings-margin) * 2) / 3);
+	& > li {
+		counter-increment: item;
+		position: relative;
+		padding-bottom: 1em;
+		&::before {
+			content: counter(item);
+			width: 2em;
+			height: 2em;
+			display: inline-grid;
+			margin-right: 1em;
+			place-items: center;
+			border-radius: 50%;
+			border: 1px solid currentColor;
+		}
+	}
 }
 
 @keyframes fadeIn {

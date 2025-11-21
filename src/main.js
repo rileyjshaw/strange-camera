@@ -33,12 +33,14 @@ async function getWebcamStream(facingMode = 'user') {
 	return video;
 }
 
+const defaultUserControls = { x1: 0.5, x2: 0.5, x3: 0.5, y1: 0.5, y2: 0.5, y3: 0.5 };
+
 async function main() {
 	// State.
 	let currentFacingMode = 'user'; // Selfie camera.
 	let isSettingsOpen = false;
 	let keyboardControlGroup = 1;
-	const userControls = { x1: 0.5, x2: 0.5, x3: 0.5, y1: 0.5, y2: 0.5, y3: 0.5 };
+	let userControls;
 
 	let displayShader;
 	let videoInput = await getWebcamStream(currentFacingMode);
@@ -232,6 +234,7 @@ async function main() {
 	function initializeScene(scene) {
 		cleanupScene?.();
 		displayShader = new ShaderPad(scene.fragmentShaderSrc, { plugins: [helpers(), save()] });
+		userControls = { ...defaultUserControls };
 		Object.entries(userControls).forEach(([key, val]) => {
 			displayShader.initializeUniform(key, 'float', val);
 		});
