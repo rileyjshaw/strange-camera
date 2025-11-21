@@ -33,7 +33,10 @@ async function getWebcamStream(facingMode = 'user') {
 	return video;
 }
 
-const defaultUserControls = { x1: 0.5, x2: 0.5, x3: 0.5, y1: 0.5, y2: 0.5, y3: 0.5 };
+// “x” is the shorter axis, which corresponds to the actual x axis on a phone.
+// These will be lower resolution but there’s more space for multiple controls.
+// “y” is the longer axis; higher resolution but space for multiple is limited.
+const defaultUserControls = { x1: 0.5, x2: 0.5, x3: 0.5, y1: 0.5, y2: 0.5 };
 
 async function main() {
 	// State.

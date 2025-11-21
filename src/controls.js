@@ -6,7 +6,6 @@ const precisionDefaults = {
 	x3: 0.01,
 	y1: 0.01,
 	y2: 0.01,
-	y3: 0.01,
 };
 
 let width = 0;
