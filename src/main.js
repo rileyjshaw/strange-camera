@@ -45,7 +45,7 @@ async function main() {
 	let keyboardControlGroup = 1;
 	let userControls;
 
-	let displayShader;
+	let shader;
 	let videoInput = await getWebcamStream(currentFacingMode);
 	let imageInput = null;
 
@@ -80,9 +80,9 @@ async function main() {
 			image.onload = () => {
 				removeVideoInput();
 				imageInput = image;
-				play = () => displayShader.play();
+				play = () => shader.play();
 				play();
-				displayShader.updateTextures({ u_inputStream: image });
+				shader.updateTextures({ u_inputStream: image });
 			};
 			image.src = e.target.result;
 		};
@@ -93,7 +93,7 @@ async function main() {
 	document.body.addEventListener('drop', handleImageDrop);
 
 	async function exportHighRes() {
-		displayShader.pause();
+		shader.pause();
 		let exportWidth, exportHeight;
 		if (imageInput) {
 			exportWidth = imageInput.naturalWidth;
@@ -113,16 +113,16 @@ async function main() {
 				exportWidth = Math.round(MAX_EXPORT_DIMENSION * aspectRatio);
 			}
 		}
-		const { width: originalWidth, height: originalHeight } = displayShader.canvas;
-		displayShader.canvas.width = exportWidth;
-		displayShader.canvas.height = exportHeight;
-		const gl = displayShader.canvas.getContext('webgl') || displayShader.canvas.getContext('webgl2');
+		const { width: originalWidth, height: originalHeight } = shader.canvas;
+		shader.canvas.width = exportWidth;
+		shader.canvas.height = exportHeight;
+		const gl = shader.canvas.getContext('webgl') || shader.canvas.getContext('webgl2');
 		gl.viewport(0, 0, exportWidth, exportHeight);
-		displayShader.draw();
+		shader.draw();
 		// TODO: Include a message argument for mobile.
-		await displayShader.save('odd-camera', 'camera.rileyjshaw.com');
-		displayShader.canvas.width = originalWidth;
-		displayShader.canvas.height = originalHeight;
+		await shader.save('odd-camera', 'camera.rileyjshaw.com');
+		shader.canvas.width = originalWidth;
+		shader.canvas.height = originalHeight;
 		gl.viewport(0, 0, originalWidth, originalHeight);
 		play();
 	}
@@ -140,7 +140,7 @@ async function main() {
 		const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
 		try {
 			videoInput = await getWebcamStream(newFacingMode);
-			displayShader.updateTextures({ u_inputStream: videoInput });
+			shader.updateTextures({ u_inputStream: videoInput });
 			currentFacingMode = newFacingMode;
 			document.body.classList.toggle('flipped', newFacingMode === 'environment');
 		} catch (error) {
@@ -169,12 +169,12 @@ async function main() {
 			case 'ArrowUp':
 				key = `y${keyboardControlGroup}`;
 				userControls[key] = Math.max(0, Math.min(1, userControls[key] + 0.01));
-				displayShader.updateUniforms({ [key]: userControls[key] });
+				shader.updateUniforms({ [key]: userControls[key] });
 				break;
 			case 'ArrowDown':
 				key = `y${keyboardControlGroup}`;
 				userControls[key] = Math.max(0, Math.min(1, userControls[key] - 0.01));
-				displayShader.updateUniforms({ [key]: userControls[key] });
+				shader.updateUniforms({ [key]: userControls[key] });
 				break;
 			case 'ArrowRight':
 				if (isSettingsOpen) {
@@ -183,7 +183,7 @@ async function main() {
 				} else {
 					key = `x${keyboardControlGroup}`;
 					userControls[key] = Math.max(0, Math.min(1, userControls[key] + 0.01));
-					displayShader.updateUniforms({ [key]: userControls[key] });
+					shader.updateUniforms({ [key]: userControls[key] });
 				}
 				break;
 			case 'ArrowLeft':
@@ -193,7 +193,7 @@ async function main() {
 				} else {
 					key = `x${keyboardControlGroup}`;
 					userControls[key] = Math.max(0, Math.min(1, userControls[key] - 0.01));
-					displayShader.updateUniforms({ [key]: userControls[key] });
+					shader.updateUniforms({ [key]: userControls[key] });
 				}
 				break;
 		}
@@ -236,16 +236,24 @@ async function main() {
 	cleanupScene = initializeScene(scenes[currentSceneIndex]);
 	function initializeScene(scene) {
 		cleanupScene?.();
-		displayShader = new ShaderPad(scene.fragmentShaderSrc, { plugins: [helpers(), save()] });
+		let onUpdateControls;
+		scene.initialize(
+			newShader => {
+				shader = newShader;
+			},
+			fn => {
+				onUpdateControls = fn;
+			}
+		);
 		userControls = { ...defaultUserControls };
 		Object.entries(userControls).forEach(([key, val]) => {
-			displayShader.initializeUniform(key, 'float', val);
+			shader.initializeUniform(key, 'float', val);
 		});
 		const textureOptions = scene.webcamHistory ? { history: scene.webcamHistory } : undefined;
-		displayShader.initializeTexture('u_inputStream', videoInput, textureOptions);
+		shader.initializeTexture('u_inputStream', videoInput, textureOptions);
 		play = function play() {
-			displayShader.play(() => {
-				displayShader.updateTextures({ u_inputStream: videoInput });
+			shader.play(() => {
+				shader.updateTextures({ u_inputStream: videoInput });
 			});
 		};
 		play();
@@ -253,11 +261,11 @@ async function main() {
 		const cleanupControls = attachControls(scene, getUpdates => {
 			const updates = getUpdates(userControls);
 			Object.assign(userControls, updates);
-			displayShader.updateUniforms(updates);
+			shader.updateUniforms(updates);
 		});
 		return () => {
 			cleanupControls();
-			displayShader.destroy();
+			shader.destroy();
 		};
 	}
 }
