@@ -1,4 +1,5 @@
-import ShaderPad, { save } from 'shaderpad';
+import ShaderPad from 'shaderpad';
+import save from 'shaderpad/plugins/save';
 import handleTouch from '../handleTouch';
 import fragmentShaderSrc from './cutup.glsl';
 

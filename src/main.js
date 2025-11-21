@@ -1,6 +1,3 @@
-import ShaderPad from 'shaderpad';
-import { helpers } from 'shaderpad/plugins/helpers';
-import { save } from 'shaderpad/plugins/save';
 import handleTouch from './handleTouch';
 import attachControls from './controls';
 import wiggleX from './wiggle x';

@@ -1,7 +1,7 @@
 // Inspo: https://timewiggler.com/
 import ShaderPad from 'shaderpad';
-import { helpers } from 'shaderpad/plugins/helpers';
-import { save } from 'shaderpad/plugins/save';
+import helpers from 'shaderpad/plugins/helpers';
+import save from 'shaderpad/plugins/save';
 
 import fragmentShaderSrc from './wiggle y.glsl';
 
