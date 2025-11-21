@@ -7,7 +7,7 @@ import wiggleX from './wiggle x';
 import wiggleY from './wiggle y';
 
 const scenes = [wiggleX, wiggleY].sort((a, b) => a.name.localeCompare(b.name));
-let currentSceneIndex = scenes.indexOf(wiggleX);
+let currentSceneIndex = scenes.indexOf(wiggleY);
 
 const MAX_EXPORT_DIMENSION = 4096;
 
@@ -214,7 +214,7 @@ async function main() {
 	handleTouch(document.body, {
 		async onTap(_x, _y, tapCount, checkFinalTap) {
 			if (tapCount < 2) return;
-			if (!(await checkFinalTap)) return;
+			if (!(await checkFinalTap())) return;
 			switch (tapCount) {
 				case 2:
 					switchCamera();
