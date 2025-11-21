@@ -92,16 +92,18 @@ video {
 #settings {
 	position: fixed;
 	inset: 0;
+	pointer-events: none;
 	margin: var(--settings-margin);
 	overflow: auto;
 	color: var(--color-dark);
 	background: var(--color-light);
 	border-radius: 6px;
 	opacity: 0;
-	transition: opacity 0.1s ease;
+	transition: opacity 0.2s ease;
 }
 
 body.settings-open #settings.populated {
+	pointer-events: auto;
 	opacity: 0.8;
 }
 
