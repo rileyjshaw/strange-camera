@@ -1,0 +1,123 @@
+@font-face {
+	font-family: 'TRJNDaVinci';
+	src: url('./TRJNDaVinci-Regular.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+body {
+	margin: 0;
+	overflow: hidden;
+	color: #fff;
+	background: #000;
+	font-family: 'TRJNDaVinci', sans-serif;
+}
+
+#app {
+	position: fixed;
+	bottom: 1em;
+	z-index: 2;
+	display: flex;
+	justify-content: center;
+	text-align: center;
+	width: 100%;
+	opacity: 0;
+	animation: fadeIn 0.5s ease 0.5s forwards;
+}
+
+#instructions {
+	padding-bottom: 1em;
+	text-wrap: balance;
+}
+
+#shutter {
+	position: relative;
+	display: grid;
+	place-items: center;
+	height: 80px;
+	width: 80px;
+	background: #797979;
+	border-radius: 50%;
+}
+
+#shutter button {
+	all: unset;
+	height: 68px;
+	width: 68px;
+	border-radius: 50%;
+	cursor: pointer;
+	background: #fff;
+	transition: transform 0.2s ease;
+}
+
+#shutter button:hover:not(:active) {
+	background: #fff;
+	transform: scale(1.04);
+}
+
+#shutter button:active {
+	transform: scale(0.88);
+	transition: transform 0.1s ease;
+}
+
+#app.ready #instructions {
+	display: none;
+}
+
+#app:not(.ready) #shutter {
+	display: none;
+}
+
+canvas {
+	z-index: 1;
+	background: #000;
+}
+
+.flipped canvas {
+	transform: scaleX(-1);
+}
+
+video {
+	position: fixed;
+	height: 1px;
+	width: 1px;
+	opacity: 0;
+}
+
+#settings {
+	position: fixed;
+	inset: 0;
+	margin: 40px;
+	color: #0c0a09;
+	background: #e7e5e4;
+	border-radius: 6px;
+	opacity: 0;
+	visibility: hidden;
+}
+
+#settings.populated {
+	opacity: 0.8;
+}
+
+body.settings-open #shutter {
+	display: none;
+}
+
+body.settings-open #settings {
+	visibility: visible;
+}
+
+#settings h2 {
+	font-weight: normal;
+	font-size: 2.5rem;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
