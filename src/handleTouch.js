@@ -93,11 +93,8 @@ export default function handleTouch(
 				finalTapResolver(true);
 				finalTapResolver = null;
 			}, remaining);
-			async function checkFinalTap() {
-				return await finalTapPromise();
-			}
 
-			onTap(touch.clientX, touch.clientY, tapCount, checkFinalTap, isLongTap, e);
+			onTap(touch.clientX, touch.clientY, tapCount, finalTapPromise, isLongTap, e);
 		});
 	}
 

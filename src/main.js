@@ -215,7 +215,7 @@ async function main() {
 	handleTouch(document.body, {
 		async onTap(_x, _y, tapCount, checkFinalTap) {
 			if (tapCount < 2) return;
-			if (!(await checkFinalTap())) return;
+			if (!(await checkFinalTap)) return;
 			switch (tapCount) {
 				case 2:
 					switchCamera();
