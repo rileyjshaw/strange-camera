@@ -45,6 +45,7 @@ async function main() {
 	let shader;
 	let videoInput = await getWebcamStream(currentFacingMode);
 	let imageInput = null;
+	let currentVideoUrl = null;
 
 	let play;
 
@@ -56,6 +57,10 @@ async function main() {
 
 	function removeVideoInput() {
 		stopWebcamStream();
+		if (currentVideoUrl) {
+			URL.revokeObjectURL(currentVideoUrl);
+			currentVideoUrl = null;
+		}
 		if (videoInput.parentNode) {
 			videoInput.parentNode.removeChild(videoInput);
 		}
@@ -64,12 +69,15 @@ async function main() {
 	function handleImageDrop(event) {
 		event.preventDefault();
 		const files = event.dataTransfer.files;
-		if (files.length > 0 && files[0].type.startsWith('image/')) {
-			handleImageFile(files[0]);
+		if (files.length > 0) {
+			if (files[0].type.startsWith('image/')) {
+				handleImageFile(files[0]);
+			} else if (files[0].type.startsWith('video/')) {
+				handleVideoFile(files[0]);
+			}
 		}
 	}
 
-	// TODO: Add video file handling.
 	function handleImageFile(file) {
 		const reader = new FileReader();
 		reader.onload = e => {
@@ -77,13 +85,39 @@ async function main() {
 			image.onload = () => {
 				removeVideoInput();
 				imageInput = image;
-				play = () => shader.play();
+				play = function play() {
+					shader.play(() => {
+						shader.updateTextures({ u_inputStream: image }); // Silly, but keeps history working.
+					});
+				};
 				play();
-				shader.updateTextures({ u_inputStream: image });
 			};
 			image.src = e.target.result;
 		};
 		reader.readAsDataURL(file);
+	}
+
+	function handleVideoFile(file) {
+		removeVideoInput();
+		imageInput = null;
+
+		const video = document.createElement('video');
+		video.autoplay = video.playsInline = video.muted = video.loop = true;
+
+		currentVideoUrl = URL.createObjectURL(file);
+		video.src = currentVideoUrl;
+
+		video.onloadedmetadata = () => {
+			videoInput = video;
+			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
+			play = function play() {
+				shader.play(() => {
+					shader.updateTextures({ u_inputStream: videoInput });
+				});
+			};
+			play();
+			shader.updateTextures({ u_inputStream: videoInput });
+		};
 	}
 
 	document.body.addEventListener('dragover', e => e.preventDefault());
@@ -132,6 +166,7 @@ async function main() {
 
 	async function switchCamera() {
 		if (imageInput) return;
+		if (videoInput && videoInput.src && !videoInput.srcObject) return;
 		stopWebcamStream();
 
 		const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
