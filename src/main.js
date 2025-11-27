@@ -1,10 +1,8 @@
 import handleTouch from './handleTouch';
 import attachControls from './controls';
-import cutup from './cutup';
-import wiggleX from './wiggle x';
-import wiggleY from './wiggle y';
+import scenes from './scenes';
+import wiggleY from './scenes/wiggle y';
 
-const scenes = [cutup, wiggleX, wiggleY].sort((a, b) => a.name.localeCompare(b.name));
 let currentSceneIndex = scenes.indexOf(wiggleY);
 
 const MAX_EXPORT_DIMENSION = 4096;
@@ -40,7 +38,6 @@ async function main() {
 	// State.
 	let currentFacingMode = 'user'; // Selfie camera.
 	let isSettingsOpen = false;
-	let keyboardControlGroup = 1;
 	let userControls;
 
 	let shader;
@@ -180,64 +177,12 @@ async function main() {
 			console.error('Failed to switch camera:', error);
 		}
 	}
-
-	document.addEventListener('keydown', e => {
-		let key = null;
-		switch (e.key) {
-			case 'Escape':
-				toggleSettings();
-				break;
-			case 'C':
-			case 'c':
-				switchCamera();
-			case '1':
-				keyboardControlGroup = 1;
-				break;
-			case '2':
-				keyboardControlGroup = 2;
-				break;
-			case '3':
-				keyboardControlGroup = 3;
-				break;
-			case 'ArrowUp':
-				key = `y${keyboardControlGroup}`;
-				userControls[key] = Math.max(0, Math.min(1, userControls[key] + 0.01));
-				shader.updateUniforms({ [key]: userControls[key] });
-				break;
-			case 'ArrowDown':
-				key = `y${keyboardControlGroup}`;
-				userControls[key] = Math.max(0, Math.min(1, userControls[key] - 0.01));
-				shader.updateUniforms({ [key]: userControls[key] });
-				break;
-			case 'ArrowRight':
-				if (isSettingsOpen) {
-					currentSceneIndex = (currentSceneIndex + 1) % scenes.length;
-					cleanupScene = initializeScene(scenes[currentSceneIndex]);
-				} else {
-					key = `x${keyboardControlGroup}`;
-					userControls[key] = Math.max(0, Math.min(1, userControls[key] + 0.01));
-					shader.updateUniforms({ [key]: userControls[key] });
-				}
-				break;
-			case 'ArrowLeft':
-				if (isSettingsOpen) {
-					currentSceneIndex = (currentSceneIndex - 1 + scenes.length) % scenes.length;
-					cleanupScene = initializeScene(scenes[currentSceneIndex]);
-				} else {
-					key = `x${keyboardControlGroup}`;
-					userControls[key] = Math.max(0, Math.min(1, userControls[key] - 0.01));
-					shader.updateUniforms({ [key]: userControls[key] });
-				}
-				break;
-		}
-	});
 	shutter.addEventListener('click', exportHighRes);
 
 	function toggleSettings() {
 		isSettingsOpen = !isSettingsOpen;
 		document.body.classList.toggle('settings-open', isSettingsOpen);
 	}
-
 	handleTouch(
 		document.getElementById('settings'),
 		{
@@ -249,6 +194,25 @@ async function main() {
 		},
 		{ once: true, moveThresholdPx: 100 }
 	);
+	document.addEventListener('keydown', e => {
+		switch (e.key) {
+			case 'Escape':
+				toggleSettings();
+				break;
+			case 'ArrowRight':
+				if (isSettingsOpen) {
+					currentSceneIndex = (currentSceneIndex + 1) % scenes.length;
+					cleanupScene = initializeScene(scenes[currentSceneIndex]);
+				}
+				break;
+			case 'ArrowLeft':
+				if (isSettingsOpen) {
+					currentSceneIndex = (currentSceneIndex - 1 + scenes.length) % scenes.length;
+					cleanupScene = initializeScene(scenes[currentSceneIndex]);
+				}
+				break;
+		}
+	});
 
 	handleTouch(document.body, {
 		async onTap(_x, _y, tapCount, checkFinalTap) {
@@ -256,7 +220,7 @@ async function main() {
 			if (!(await checkFinalTap)) return;
 			switch (tapCount) {
 				case 2:
-					switchCamera();
+					if (!isSettingsOpen) switchCamera();
 					break;
 				case 3:
 					toggleSettings();
@@ -264,6 +228,15 @@ async function main() {
 			}
 		},
 	});
+
+	// Prevent pinch gestures.
+	document.addEventListener(
+		'touchmove',
+		e => {
+			if (e.touches.length === 2) e.preventDefault();
+		},
+		{ passive: false }
+	);
 
 	let cleanupScene;
 	cleanupScene = initializeScene(scenes[currentSceneIndex]);

@@ -10,11 +10,13 @@ const precisionDefaults = {
 
 let width = 0;
 let height = 0;
-const resizeObserver = new ResizeObserver(() => {
-	width = document.body.clientWidth;
-	height = document.body.clientHeight;
-});
-resizeObserver.observe(document.body);
+
+function updateDimensions() {
+	width = window.visualViewport.width;
+	height = window.visualViewport.height;
+}
+updateDimensions();
+window.visualViewport.addEventListener('resize', updateDimensions);
 
 const settingsContainer = document.getElementById('settings');
 const titleEl = document.getElementById('title');
@@ -58,12 +60,42 @@ function attachControls(scene, handleMove) {
 			});
 		},
 	});
+	let keyboardControlGroup = 1;
+	function keyboardHandler(e) {
+		switch (e.key) {
+			case '1':
+				keyboardControlGroup = 1;
+				break;
+			case '2':
+				keyboardControlGroup = 2;
+				break;
+			case '3':
+				keyboardControlGroup = 3;
+				break;
+			case 'ArrowUp':
+			case 'ArrowDown':
+			case 'ArrowRight':
+			case 'ArrowLeft':
+				let direction = e.key === 'ArrowUp' || e.key === 'ArrowDown' ? 'y' : 'x';
+				let diff = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : -1;
+				// IMPORTANT: "y" actually means "the longer axis". If the viewport
+				// is landscape, flip the direction.
+				if (width > height) direction = direction === 'x' ? 'y' : 'x';
+				const key = `${direction}${keyboardControlGroup}`;
+				handleMove(currentValues => {
+					return { [key]: Math.max(0, Math.min(1, currentValues[key] + diff * precision[key])) };
+				});
+				break;
+		}
+	}
+	document.addEventListener('keydown', keyboardHandler);
 
 	settingsContainer.classList.add('populated');
 
 	return () => {
 		settingsContainer.classList.remove('populated');
 		touchCleanup();
+		document.removeEventListener('keydown');
 		titleEl.textContent = '';
 		[controlsXContainer, controlsYContainer, controlsListMove, controlsListTap].forEach(container => {
 			while (container.firstChild) {
