@@ -255,6 +255,7 @@ async function main() {
 		play();
 
 		const cleanupControls = attachControls(scene, getUpdates => {
+			if (isSettingsOpen) return;
 			const updates = getUpdates(userControls);
 			Object.assign(userControls, updates);
 			scene.onUpdate?.(userControls, shader);
