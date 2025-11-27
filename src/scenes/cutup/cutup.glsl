@@ -42,14 +42,6 @@ vec2 cutup(vec2 uv, float stepSize, vec2 nStrips) {
 	return targetStripUv + localUv;
 }
 
-// Crop the texture to preserve its aspect ratio (object-fit: contain).
-vec2 correctAspectRatio(vec2 uv, vec2 resolution, vec2 textureSize) {
-	float canvasAspect = resolution.x / resolution.y;
-	float textureAspect = textureSize.x / textureSize.y;
-	vec2 scale = vec2(min(canvasAspect / textureAspect, 1.0), min(textureAspect / canvasAspect, 1.0));
-	return (uv - 0.5) * scale + 0.5;
-}
-
 void main() {
 	vec2 uv = v_uv;
 	// Thinking in terms of the image, you’d want to start by correcting the aspect ratio, then mirroring the image,
@@ -57,7 +49,7 @@ void main() {
 	uv.y = 1.0 - uv.y; // Make the bottoms touch.
 	uv = cutup(uv, u_stepSize, vec2(u_nStrips));
 	uv = triangle(uv, vec2(pow(2.0, float(u_nShuffles - 1)))); // Mirror with nShuffles copies.
-	uv = correctAspectRatio(uv, u_resolution, vec2(textureSize(u_inputStream, 0)));
+	uv = fitCover(uv, vec2(textureSize(u_inputStream, 0)));
 	uv = 1.0 - uv;
 	fragColor = texture(u_inputStream, uv);
 }
