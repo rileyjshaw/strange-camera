@@ -5,13 +5,18 @@ import save from 'shaderpad/plugins/save';
 
 import fragmentShaderSrc from './wiggle y.glsl';
 
+const X1_INITIAL = 1;
+const Y1_INITIAL = 0;
+
 export default {
 	name: 'Wiggle Y',
 	controls: [['Number of rows'], ['Delay per row']],
-	controlValues: { x1: 1, y1: 0 },
+	controlValues: { x1: X1_INITIAL, y1: Y1_INITIAL },
 	history: 196,
 	initialize(setShader) {
 		const shader = new ShaderPad(fragmentShaderSrc, { plugins: [helpers(), save()] });
+		shader.initializeUniform('x1', 'float', X1_INITIAL);
+		shader.initializeUniform('y1', 'float', Y1_INITIAL);
 		setShader(shader);
 	},
 	onUpdate(uniformValues, shader) {
