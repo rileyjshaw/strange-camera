@@ -1,9 +1,10 @@
 import handleTouch from './handleTouch';
 import attachControls from './controls';
+import cutup from './cutup';
 import wiggleX from './wiggle x';
 import wiggleY from './wiggle y';
 
-const scenes = [wiggleX, wiggleY].sort((a, b) => a.name.localeCompare(b.name));
+const scenes = [cutup, wiggleX, wiggleY].sort((a, b) => a.name.localeCompare(b.name));
 let currentSceneIndex = scenes.indexOf(wiggleY);
 
 const MAX_EXPORT_DIMENSION = 4096;
@@ -268,20 +269,14 @@ async function main() {
 	cleanupScene = initializeScene(scenes[currentSceneIndex]);
 	function initializeScene(scene) {
 		cleanupScene?.();
-		let onUpdateControls;
-		scene.initialize(
-			newShader => {
-				shader = newShader;
-			},
-			fn => {
-				onUpdateControls = fn;
-			}
-		);
-		userControls = { ...defaultUserControls };
+		scene.initialize(function setShader(newShader) {
+			shader = newShader;
+		});
+		userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
 		Object.entries(userControls).forEach(([key, val]) => {
 			shader.initializeUniform(key, 'float', val);
 		});
-		const textureOptions = scene.webcamHistory ? { history: scene.webcamHistory } : undefined;
+		const textureOptions = scene.history ? { history: scene.history } : undefined;
 		shader.initializeTexture('u_inputStream', videoInput, textureOptions);
 		play = function play() {
 			shader.play(() => {
@@ -293,6 +288,7 @@ async function main() {
 		const cleanupControls = attachControls(scene, getUpdates => {
 			const updates = getUpdates(userControls);
 			Object.assign(userControls, updates);
+			if (scene.onUpdate?.(userControls, shader)?.skip) return;
 			shader.updateUniforms(updates);
 		});
 		return () => {

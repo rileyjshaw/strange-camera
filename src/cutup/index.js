@@ -1,35 +1,15 @@
 import ShaderPad from 'shaderpad';
+import helpers from 'shaderpad/plugins/helpers';
 import save from 'shaderpad/plugins/save';
-import handleTouch from '../handleTouch';
+
 import fragmentShaderSrc from './cutup.glsl';
 
-const MIN_N_STRIPS = 2;
-const MAX_N_STRIPS = 1920;
-const MIN_N_SHUFFLES = 1;
-const MAX_N_SHUFFLES = 10;
-const MAX_EXPORT_DIMENSION = 4096;
-
-async function getWebcamStream(facingMode = 'user') {
-	const video = document.createElement('video');
-	video.autoplay = video.playsInline = video.muted = true;
-
-	try {
-		const constraints = {
-			video: {
-				facingMode,
-				width: 4096,
-			},
-		};
-		const stream = await navigator.mediaDevices.getUserMedia(constraints);
-		video.srcObject = stream;
-		await new Promise(resolve => (video.onloadedmetadata = resolve));
-	} catch (error) {
-		console.error('Error accessing webcam:', error);
-		throw error;
-	}
-
-	return video;
-}
+const N_SHUFFLES_MIN = 1;
+const N_SHUFFLES_MAX = 10;
+const N_SHUFFLES_INITIAL = N_SHUFFLES_MIN;
+const N_STRIPS_MIN = 2;
+const N_STRIPS_MAX = 1920;
+const N_STRIPS_INITIAL = 32;
 
 function isPowerOfTwo(n) {
 	return (n & (n - 1)) === 0;
@@ -89,191 +69,41 @@ const getStepSize = (() => {
 	};
 })();
 
-async function main() {
-	// State.
-	let currentFacingMode = 'user'; // Selfie camera.
-
-	let videoInput = await getWebcamStream(currentFacingMode);
-	let imageInput = null;
-
-	let nStrips = 32;
-	let nShuffles = MIN_N_SHUFFLES;
-	let stepSize = getStepSize(nShuffles, nStrips);
-
-	const app = document.getElementById('app');
-	const shutter = document.querySelector('#shutter button');
-	app.classList.add('ready');
-
-	document.body.appendChild(videoInput); // HACK: Desktop Safari won’t update the shader otherwise.
-
-	function removeVideoInput() {
-		stopWebcamStream();
-		if (videoInput.parentNode) {
-			videoInput.parentNode.removeChild(videoInput);
-		}
-	}
-
-	function handleImageDrop(event) {
-		event.preventDefault();
-		const files = event.dataTransfer.files;
-		if (files.length > 0 && files[0].type.startsWith('image/')) {
-			handleImageFile(files[0]);
-		}
-	}
-
-	function handleImageFile(file) {
-		const reader = new FileReader();
-		reader.onload = e => {
-			const image = new Image();
-			image.onload = () => {
-				removeVideoInput();
-				imageInput = image;
-				play = () => displayShader.play();
-				play();
-				displayShader.updateTextures({ u_inputStream: image });
-			};
-			image.src = e.target.result;
-		};
-		reader.readAsDataURL(file);
-	}
-
-	document.body.addEventListener('dragover', e => e.preventDefault());
-	document.body.addEventListener('drop', handleImageDrop);
-
-	const displayShader = new ShaderPad(fragmentShaderSrc);
-	const exportCanvas = document.createElement('canvas');
-	exportCanvas.classList.add('export');
-	const exportShader = new ShaderPad(fragmentShaderSrc, { canvas: exportCanvas, plugins: [save()] });
-	[displayShader, exportShader].forEach(shader => {
-		shader.initializeUniform('u_nShuffles', 'int', nShuffles);
-		shader.initializeUniform('u_nStrips', 'float', nStrips);
-		shader.initializeUniform('u_stepSize', 'float', stepSize);
-		shader.initializeTexture('u_inputStream', videoInput);
-	});
-
-	function exportHighRes() {
-		displayShader.pause();
-		const scaleFactor = Math.pow(2, Math.floor(nShuffles) + 1);
-		let exportWidth, exportHeight;
-
-		if (imageInput) {
-			exportWidth = imageInput.naturalWidth * scaleFactor;
-			exportHeight = imageInput.naturalHeight * scaleFactor;
-		} else {
-			exportWidth = videoInput.videoWidth * scaleFactor;
-			exportHeight = videoInput.videoHeight * scaleFactor;
-		}
-
-		if (exportWidth > MAX_EXPORT_DIMENSION || exportHeight > MAX_EXPORT_DIMENSION) {
-			const aspectRatio = exportWidth / exportHeight;
-			if (exportWidth > exportHeight) {
-				exportWidth = MAX_EXPORT_DIMENSION;
-				exportHeight = Math.round(MAX_EXPORT_DIMENSION / aspectRatio);
-			} else {
-				exportHeight = MAX_EXPORT_DIMENSION;
-				exportWidth = Math.round(MAX_EXPORT_DIMENSION * aspectRatio);
-			}
-		}
-		exportCanvas.width = exportWidth;
-		exportCanvas.height = exportHeight;
-
-		exportShader.updateUniforms({ u_nShuffles: nShuffles, u_nStrips: nStrips, u_stepSize: stepSize });
-		exportShader.updateTextures({ u_inputStream: imageInput ?? videoInput });
-		document.body.appendChild(exportCanvas);
-		setTimeout(async () => {
-			exportShader.step(0);
-			await exportShader.save('odd-camera');
-			document.body.removeChild(exportCanvas);
-			play();
-		}, 8);
-	}
-
-	function stopWebcamStream() {
-		if (videoInput.srcObject) {
-			videoInput.srcObject.getTracks().forEach(track => track.stop());
-		}
-	}
-
-	async function switchCamera() {
-		if (imageInput) return;
-		stopWebcamStream();
-
-		const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-		try {
-			videoInput = await getWebcamStream(newFacingMode);
-			displayShader.updateTextures({ u_inputStream: videoInput });
-			currentFacingMode = newFacingMode;
-			document.body.classList.toggle('flipped', newFacingMode === 'environment');
-		} catch (error) {
-			console.error('Failed to switch camera:', error);
-		}
-	}
-
-	document.addEventListener('keydown', e => {
-		let uniformsToUpdate = null;
-		switch (e.key) {
-			case 'ArrowUp':
-				nStrips = Math.min(MAX_N_STRIPS, nStrips + 1);
-				uniformsToUpdate = { u_nStrips: nStrips };
-				break;
-			case 'ArrowDown':
-				nStrips = Math.max(MIN_N_STRIPS, nStrips - 1);
-				uniformsToUpdate = { u_nStrips: nStrips };
-				break;
-			case 'ArrowRight':
-				nShuffles = Math.min(MAX_N_SHUFFLES, nShuffles + 1);
-				uniformsToUpdate = { u_nShuffles: nShuffles };
-				break;
-			case 'ArrowLeft':
-				nShuffles = Math.max(MIN_N_SHUFFLES, nShuffles - 1);
-				uniformsToUpdate = { u_nShuffles: nShuffles };
-				break;
-			case 's':
-				exportHighRes();
-				break;
-		}
-		if (uniformsToUpdate) {
-			uniformsToUpdate.u_stepSize = stepSize = getStepSize(nShuffles, nStrips);
-			displayShader.updateUniforms(uniformsToUpdate);
-		}
-	});
-
-	shutter.addEventListener('click', () => {
-		exportHighRes();
-	});
-
-	handleTouch(document.body, (direction, diff) => {
-		if (diff > 16) lastTapTime = 0;
-		let uniformsToUpdate = null;
-		if (direction === 'x') {
-			nShuffles = Math.max(MIN_N_SHUFFLES, Math.min(MAX_N_SHUFFLES, nShuffles + Math.sign(diff) / 8));
-			uniformsToUpdate = { u_nShuffles: nShuffles };
-		} else {
-			nStrips = Math.max(MIN_N_STRIPS, Math.min(MAX_N_STRIPS, nStrips - Math.sign(diff)));
-			uniformsToUpdate = { u_nStrips: nStrips };
-		}
-		if (uniformsToUpdate) {
-			uniformsToUpdate.u_stepSize = stepSize = getStepSize(nShuffles, nStrips);
-			displayShader.updateUniforms(uniformsToUpdate);
-		}
-	});
-
-	// Double-tap to switch camera.
-	let lastTapTime = 0;
-	document.body.addEventListener('touchend', () => {
-		const currentTime = Date.now();
-		if (currentTime - lastTapTime < 300) {
-			switchCamera();
-		}
-		lastTapTime = currentTime;
-	});
-
-	let play = function play() {
-		displayShader.play(() => {
-			displayShader.updateTextures({ u_inputStream: videoInput });
-		});
-	};
-	play();
+function getInitialControlValue(min, max, initial) {
+	return (initial - min) / (max - min);
 }
 
-document.addEventListener('DOMContentLoaded', main);
+const uniformValues = {};
+export default {
+	name: 'Cutup',
+	controls: [['Number of shuffles'], ['Number of strips']],
+	controlValues: {
+		x1: getInitialControlValue(N_SHUFFLES_MIN, N_SHUFFLES_MAX, N_SHUFFLES_INITIAL),
+		y1: getInitialControlValue(N_STRIPS_MIN, N_STRIPS_MAX, N_STRIPS_INITIAL),
+	},
+	controlPrecision: {
+		x1: 0.002,
+	},
+	initialize(setShader) {
+		const shader = new ShaderPad(fragmentShaderSrc, { plugins: [helpers(), save()] });
+		uniformValues.u_nShuffles = N_SHUFFLES_INITIAL;
+		uniformValues.u_nStrips = N_STRIPS_INITIAL;
+		uniformValues.u_stepSize = getStepSize(N_SHUFFLES_INITIAL, N_STRIPS_INITIAL);
+		shader.initializeUniform('u_nShuffles', 'int', uniformValues.u_nShuffles);
+		shader.initializeUniform('u_nStrips', 'float', uniformValues.u_nStrips);
+		shader.initializeUniform('u_stepSize', 'float', uniformValues.u_stepSize);
+		setShader(shader);
+	},
+	onUpdate({ x1, y1 }, shader) {
+		const nShuffles = Math.round(N_SHUFFLES_MIN + x1 * (N_SHUFFLES_MAX - N_SHUFFLES_MIN));
+		const nStrips = Math.round(N_STRIPS_MIN + y1 * (N_STRIPS_MAX - N_STRIPS_MIN));
+		if (nShuffles === uniformValues.u_nShuffles && nStrips === uniformValues.u_nStrips) {
+			return { skip: true };
+		}
+		uniformValues.u_nShuffles = nShuffles;
+		uniformValues.u_nStrips = nStrips;
+		uniformValues.u_stepSize = getStepSize(nShuffles, nStrips);
+		shader.updateUniforms(uniformValues);
+		return { skip: true };
+	},
+};

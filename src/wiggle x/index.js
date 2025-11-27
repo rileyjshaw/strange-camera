@@ -7,8 +7,9 @@ import fragmentShaderSrc from './wiggle x.glsl';
 
 export default {
 	name: 'Wiggle X',
-	controls: [['Number of strips'], ['Delay per strip']],
-	webcamHistory: 196,
+	controls: [['Number of columns'], ['Delay per column']],
+	controlValues: { x1: 1, y1: 0 },
+	history: 196,
 	initialize(setShader) {
 		const shader = new ShaderPad(fragmentShaderSrc, { plugins: [helpers(), save()] });
 		setShader(shader);
