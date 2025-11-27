@@ -38,7 +38,6 @@ async function main() {
 	// State.
 	let currentFacingMode = 'user'; // Selfie camera.
 	let isSettingsOpen = false;
-	let userControls;
 
 	let shader;
 	let videoInput = await getWebcamStream(currentFacingMode);
@@ -245,10 +244,7 @@ async function main() {
 		scene.initialize(function setShader(newShader) {
 			shader = newShader;
 		});
-		userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
-		Object.entries(userControls).forEach(([key, val]) => {
-			shader.initializeUniform(key, 'float', val);
-		});
+		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
 		const textureOptions = scene.history ? { history: scene.history } : undefined;
 		shader.initializeTexture('u_inputStream', videoInput, textureOptions);
 		play = function play() {
@@ -261,8 +257,7 @@ async function main() {
 		const cleanupControls = attachControls(scene, getUpdates => {
 			const updates = getUpdates(userControls);
 			Object.assign(userControls, updates);
-			if (scene.onUpdate?.(userControls, shader)?.skip) return;
-			shader.updateUniforms(updates);
+			scene.onUpdate?.(userControls, shader);
 		});
 		return () => {
 			cleanupControls();

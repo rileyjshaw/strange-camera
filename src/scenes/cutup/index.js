@@ -98,12 +98,12 @@ export default {
 		const nShuffles = Math.round(N_SHUFFLES_MIN + x1 * (N_SHUFFLES_MAX - N_SHUFFLES_MIN));
 		const nStrips = Math.round(N_STRIPS_MIN + y1 * (N_STRIPS_MAX - N_STRIPS_MIN));
 		if (nShuffles === uniformValues.u_nShuffles && nStrips === uniformValues.u_nStrips) {
-			return { skip: true };
+			return;
 		}
+
 		uniformValues.u_nShuffles = nShuffles;
 		uniformValues.u_nStrips = nStrips;
 		uniformValues.u_stepSize = getStepSize(nShuffles, nStrips);
 		shader.updateUniforms(uniformValues);
-		return { skip: true };
 	},
 };

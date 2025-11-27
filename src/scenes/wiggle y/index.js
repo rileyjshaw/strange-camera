@@ -14,4 +14,7 @@ export default {
 		const shader = new ShaderPad(fragmentShaderSrc, { plugins: [helpers(), save()] });
 		setShader(shader);
 	},
+	onUpdate(uniformValues, shader) {
+		shader.updateUniforms(uniformValues);
+	},
 };
