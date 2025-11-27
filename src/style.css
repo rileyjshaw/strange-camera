@@ -167,7 +167,7 @@ body.settings-open #shutter {
 #controls-y {
 	writing-mode: vertical-lr;
 }
-@media (aspect-ratio < 1) {
+@media (aspect-ratio > 1) {
 	#controls-x {
 		writing-mode: vertical-lr;
 	}

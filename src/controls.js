@@ -95,7 +95,7 @@ function attachControls(scene, handleMove) {
 	return () => {
 		settingsContainer.classList.remove('populated');
 		touchCleanup();
-		document.removeEventListener('keydown');
+		document.removeEventListener('keydown', keyboardHandler);
 		titleEl.textContent = '';
 		[controlsXContainer, controlsYContainer, controlsListMove, controlsListTap].forEach(container => {
 			while (container.firstChild) {
