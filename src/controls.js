@@ -77,7 +77,7 @@ function attachControls(scene, handleMove) {
 			case 'ArrowRight':
 			case 'ArrowLeft':
 				let direction = e.key === 'ArrowUp' || e.key === 'ArrowDown' ? 'y' : 'x';
-				let diff = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : -1;
+				let diff = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 10 : -10;
 				// IMPORTANT: "y" actually means "the longer axis". If the viewport
 				// is landscape, flip the direction.
 				if (width > height) direction = direction === 'x' ? 'y' : 'x';
