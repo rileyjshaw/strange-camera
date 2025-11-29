@@ -10,7 +10,7 @@ uniform int u_frame;
 uniform float u_offsetPixels;
 
 void main() {
-	vec2 uv = v_uv;
+	vec2 uv = vec2(1.0 - v_uv.x, v_uv.y);
 	vec2 pixel = vec2(1.0) / vec2(textureSize(u_inputStream, 0));
 	vec3 color = texture(u_inputStream, uv).rgb;
 
