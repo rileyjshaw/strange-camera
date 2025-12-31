@@ -107,7 +107,7 @@ body.settings-open #settings.populated {
 	opacity: 0.8;
 }
 
-body.settings-open #shutter {
+body:is(.settings-open, .shutter-hidden) #shutter {
 	display: none;
 }
 

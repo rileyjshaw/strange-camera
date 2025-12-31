@@ -38,6 +38,7 @@ async function main() {
 	// State.
 	let currentFacingMode = 'user'; // Selfie camera.
 	let isSettingsOpen = false;
+	let isShutterHidden = false;
 
 	let shader;
 	let videoInput = await getWebcamStream(currentFacingMode);
@@ -182,6 +183,10 @@ async function main() {
 		isSettingsOpen = !isSettingsOpen;
 		document.body.classList.toggle('settings-open', isSettingsOpen);
 	}
+	function toggleShutter() {
+		isShutterHidden = !isShutterHidden;
+		document.body.classList.toggle('shutter-hidden', isShutterHidden);
+	}
 	handleTouch(
 		document.getElementById('settings'),
 		{
@@ -197,6 +202,12 @@ async function main() {
 		switch (e.key) {
 			case 'Escape':
 				toggleSettings();
+				break;
+			case 'h':
+			case 'H':
+				if (!isSettingsOpen) {
+					toggleShutter();
+				}
 				break;
 			case 'ArrowRight':
 				if (isSettingsOpen) {
