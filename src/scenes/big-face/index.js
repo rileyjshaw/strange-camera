@@ -11,6 +11,7 @@ const SCALE_INITIAL = 3;
 
 export default {
 	name: 'Big Face',
+	hash: 'big-face',
 	controls: [[], ['Scale']],
 	controlValues: { y1: (SCALE_INITIAL - SCALE_MIN) / (SCALE_MAX - SCALE_MIN) },
 	initialize(setShader) {

@@ -1,9 +1,13 @@
 import handleTouch from './handleTouch';
 import attachControls from './controls';
-import scenes from './scenes';
-import wiggleY from './scenes/wiggle y';
+import scenes, { sceneHashToIndex } from './scenes';
 
-let currentSceneIndex = scenes.indexOf(wiggleY);
+function updateUrlHash(scene) {
+	window.location.hash = scene.hash;
+}
+
+const urlHash = window.location.hash.slice(1);
+let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? sceneHashToIndex.get('wiggle-y');
 
 const MAX_EXPORT_DIMENSION = 4096;
 
@@ -188,13 +192,21 @@ async function main() {
 		isShutterHidden = !isShutterHidden;
 		document.body.classList.toggle('shutter-hidden', isShutterHidden);
 	}
+
+	let cleanupScene;
+	function switchToScene(index) {
+		currentSceneIndex = index;
+		cleanupScene = initializeScene(scenes[currentSceneIndex]);
+		updateUrlHash(scenes[currentSceneIndex]);
+	}
+
 	handleTouch(
 		document.getElementById('settings'),
 		{
 			onMove(direction, diff) {
 				if (direction === 'y') return;
-				currentSceneIndex = (currentSceneIndex + Math.sign(diff) + scenes.length) % scenes.length;
-				cleanupScene = initializeScene(scenes[currentSceneIndex]);
+				const newIndex = (currentSceneIndex + Math.sign(diff) + scenes.length) % scenes.length;
+				switchToScene(newIndex);
 			},
 		},
 		{ once: true, moveThresholdPx: 100 }
@@ -212,14 +224,12 @@ async function main() {
 				break;
 			case 'ArrowRight':
 				if (isSettingsOpen) {
-					currentSceneIndex = (currentSceneIndex + 1) % scenes.length;
-					cleanupScene = initializeScene(scenes[currentSceneIndex]);
+					switchToScene((currentSceneIndex + 1) % scenes.length);
 				}
 				break;
 			case 'ArrowLeft':
 				if (isSettingsOpen) {
-					currentSceneIndex = (currentSceneIndex - 1 + scenes.length) % scenes.length;
-					cleanupScene = initializeScene(scenes[currentSceneIndex]);
+					switchToScene((currentSceneIndex - 1 + scenes.length) % scenes.length);
 				}
 				break;
 		}
@@ -249,8 +259,8 @@ async function main() {
 		{ passive: false }
 	);
 
-	let cleanupScene;
-	cleanupScene = initializeScene(scenes[currentSceneIndex]);
+	switchToScene(currentSceneIndex);
+
 	function initializeScene(scene) {
 		cleanupScene?.();
 		scene.initialize(function setShader(newShader) {

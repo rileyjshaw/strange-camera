@@ -19,6 +19,7 @@ function getDimmingFactor(nEchoes) {
 const uniformValues = {};
 export default {
 	name: 'Channels',
+	hash: 'channels',
 	controls: [['Number of echoes'], ['Delay per echo']],
 	controlValues: { x1: 0 },
 	history: maxFrameDelay,

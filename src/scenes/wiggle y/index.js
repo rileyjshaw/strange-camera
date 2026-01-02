@@ -10,6 +10,7 @@ const Y1_INITIAL = 0;
 
 export default {
 	name: 'Wiggle Y',
+	hash: 'wiggle-y',
 	controls: [['Number of rows'], ['Delay per row']],
 	controlValues: { x1: X1_INITIAL, y1: Y1_INITIAL },
 	history: 196,

@@ -76,6 +76,7 @@ function getInitialControlValue(min, max, initial) {
 const uniformValues = {};
 export default {
 	name: 'Cutup',
+	hash: 'cutup',
 	controls: [['Number of shuffles'], ['Number of strips']],
 	controlValues: {
 		x1: getInitialControlValue(N_SHUFFLES_MIN, N_SHUFFLES_MAX, N_SHUFFLES_INITIAL),

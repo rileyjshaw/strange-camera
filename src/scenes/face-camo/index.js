@@ -11,6 +11,7 @@ const OFFSET_PIXELS_INITIAL = 20;
 
 export default {
 	name: 'Face Camo',
+	hash: 'face-camo',
 	controls: [[], ['Offset pixels']],
 	controlValues: { y1: OFFSET_PIXELS_INITIAL / OFFSET_PIXELS_MAX },
 	initialize(setShader) {

@@ -10,4 +10,6 @@ const scenes = [bigFace, bodyCamo, channels, cutup, faceCamo, wiggleX, wiggleY].
 	a.name.localeCompare(b.name)
 );
 
+export const sceneHashToIndex = new Map(scenes.map((scene, index) => [scene.hash, index]));
+
 export default scenes;
