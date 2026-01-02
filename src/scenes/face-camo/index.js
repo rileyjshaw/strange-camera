@@ -23,7 +23,6 @@ export default {
 					options: { maxFaces: 3 },
 				}),
 			],
-			history: 1,
 		});
 		shader.initializeUniform('u_offsetPixels', 'float', OFFSET_PIXELS_INITIAL);
 		setShader(shader);

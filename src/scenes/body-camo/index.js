@@ -7,7 +7,7 @@ import fragmentShaderSrc from './body-camo.glsl';
 
 const OFFSET_PIXELS_MIN = 0;
 const OFFSET_PIXELS_MAX = 180;
-const OFFSET_PIXELS_INITIAL = 20;
+const OFFSET_PIXELS_INITIAL = 40;
 
 export default {
 	name: 'Body Camo',
@@ -23,7 +23,6 @@ export default {
 					options: { maxPoses: 2 },
 				}),
 			],
-			history: 1,
 		});
 		shader.initializeUniform('u_offsetPixels', 'float', OFFSET_PIXELS_INITIAL);
 		setShader(shader);

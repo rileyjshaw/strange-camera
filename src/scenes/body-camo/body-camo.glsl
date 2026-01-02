@@ -4,20 +4,18 @@ precision highp float;
 in vec2 v_uv;
 out vec4 outColor;
 uniform sampler2D u_inputStream;
-uniform highp sampler2DArray u_history;
-uniform int u_historyFrameOffset;
-uniform int u_frame;
 uniform float u_offsetPixels;
 
 void main() {
-	vec2 uv = vec2(1.0 - v_uv.x, v_uv.y);
-	vec2 pixel = vec2(1.0) / vec2(textureSize(u_inputStream, 0));
+	vec2 texSize = vec2(textureSize(u_inputStream, 0));
+	vec2 uv = fitCover(v_uv, texSize);
+	vec2 pixel = vec2(1.0) / texSize;
 	vec3 color = texture(u_inputStream, uv).rgb;
 
 	float closestCenter = 2.0;
 	for (int i = 0; i < u_nPoses; ++i) {
-		vec2 dir = uv - u_poseCenter[i];
-		float lenDir = length(dir);
+		vec2 dir = uv - u_poseCenter[i]; // Vector from the center of the pose to the current pixel.
+		float lenDir = length(dir); // Distance from the center of the pose to the current pixel.
 		if (lenDir >= closestCenter) continue;
 
 		closestCenter = lenDir;
@@ -27,15 +25,17 @@ void main() {
 			dir /= lenDir; // It looks cool if you comment this out!
 		}
 
-		vec2 uvNearerPoseCenter = uv - dir * 80.0 * pixel;
-		float body = getBody(uv) + getBody(uvNearerPoseCenter);
-		if (body > 0.0) {
-			vec2 target = uv + dir * (u_offsetPixels * pixel); // Grab the color away from your body center.
-			float z = historyZ(u_history, u_historyFrameOffset, 1);
-			color = texture(u_history, vec3(target, z)).rgb;
+		vec2 target = uv;
+		vec2 offset = dir * (u_offsetPixels * pixel);
+		// Move target away from center until it's outside the body.
+		for (int i = 0; i < 100; ++i) {
+			vec2 nearerTarget = target - offset * 2.0;
+			if ((getBody(target) + getBody(nearerTarget)) <= 0.0) break; // Exit if neither point is in the body.
+			target = clamp(target + offset, 0.0, 1.0);
+			if ((target.x <= 0.0 || target.x >= 1.0) || (target.y <= 0.0 || target.y >= 1.0)) break; // Exit if target is at the boundary.
 		}
+		color = texture(u_inputStream, target).rgb;
 	}
 
 	outColor = vec4(color.x, color.y * 1.0, color.z, 1.0);
 }
-

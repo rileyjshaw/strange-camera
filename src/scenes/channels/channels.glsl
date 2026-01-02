@@ -11,7 +11,7 @@ uniform int u_frameDelayPerEcho;
 uniform float u_dimmingFactor;
 
 void main() {
-	vec2 uv = fitCover(vec2(1.0 - v_uv.x, v_uv.y), vec2(textureSize(u_inputStream, 0)));
+	vec2 uv = fitCover(v_uv, vec2(textureSize(u_inputStream, 0)));
 
 	vec3 color = vec3(0.0);
 	for (int i = 0; i < u_nEchoes; ++i) {

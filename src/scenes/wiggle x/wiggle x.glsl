@@ -17,5 +17,5 @@ void main() {
 	int delay = stripIndex * delayPerStrip;
 	vec2 texUv = fitCover(v_uv, vec2(textureSize(u_inputStream, 0).xy));
 	float z = historyZ(u_inputStream, u_inputStreamFrameOffset, delay);
-	outColor = texture(u_inputStream, vec3(1.0 - texUv.x, texUv.y, z));
+	outColor = texture(u_inputStream, vec3(texUv.x, texUv.y, z));
 }

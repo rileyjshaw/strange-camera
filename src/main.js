@@ -37,6 +37,7 @@ const defaultUserControls = { x1: 0.5, x2: 0.5, x3: 0.5, y1: 0.5, y2: 0.5 };
 async function main() {
 	// State.
 	let currentFacingMode = 'user'; // Selfie camera.
+	document.body.classList.add('flipped');
 	let isSettingsOpen = false;
 	let isShutterHidden = false;
 
@@ -172,7 +173,7 @@ async function main() {
 			videoInput = await getWebcamStream(newFacingMode);
 			shader.updateTextures({ u_inputStream: videoInput });
 			currentFacingMode = newFacingMode;
-			document.body.classList.toggle('flipped', newFacingMode === 'environment');
+			document.body.classList.toggle('flipped', newFacingMode === 'user');
 		} catch (error) {
 			console.error('Failed to switch camera:', error);
 		}

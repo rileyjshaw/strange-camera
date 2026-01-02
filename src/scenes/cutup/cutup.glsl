@@ -50,6 +50,6 @@ void main() {
 	uv = cutup(uv, u_stepSize, vec2(u_nStrips));
 	uv = triangle(uv, vec2(pow(2.0, float(u_nShuffles - 1)))); // Mirror with nShuffles copies.
 	uv = fitCover(uv, vec2(textureSize(u_inputStream, 0)));
-	uv = 1.0 - uv;
+	uv.y = 1.0 - uv.y;
 	fragColor = texture(u_inputStream, uv);
 }
