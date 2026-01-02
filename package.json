@@ -10,10 +10,10 @@
 	},
 	"devDependencies": {
 		"@vitejs/plugin-basic-ssl": "^2.1.0",
-		"vite": "^7.2.4",
+		"vite": "^7.3.0",
 		"vite-plugin-glsl": "^1.5.5"
 	},
 	"dependencies": {
-		"shaderpad": "^1.0.0-beta.25"
+		"shaderpad": "^1.0.0-beta.26"
 	}
 }
