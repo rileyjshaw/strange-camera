@@ -149,8 +149,7 @@ async function main() {
 		const gl = shader.canvas.getContext('webgl') || shader.canvas.getContext('webgl2');
 		gl.viewport(0, 0, exportWidth, exportHeight);
 		shader.draw();
-		// TODO: Include a message argument for mobile.
-		await shader.save('odd-camera', 'camera.rileyjshaw.com');
+		await shader.save('odd-camera', window.location.href);
 		shader.canvas.width = originalWidth;
 		shader.canvas.height = originalHeight;
 		gl.viewport(0, 0, originalWidth, originalHeight);
