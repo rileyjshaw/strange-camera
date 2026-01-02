@@ -166,11 +166,12 @@ async function main() {
 	async function switchCamera() {
 		if (imageInput) return;
 		if (videoInput && videoInput.src && !videoInput.srcObject) return;
-		stopWebcamStream();
+		removeVideoInput();
 
 		const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
 		try {
 			videoInput = await getWebcamStream(newFacingMode);
+			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			shader.updateTextures({ u_inputStream: videoInput });
 			currentFacingMode = newFacingMode;
 			document.body.classList.toggle('flipped', newFacingMode === 'user');
