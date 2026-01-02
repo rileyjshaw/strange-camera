@@ -27,10 +27,13 @@ void main() {
 
 		vec2 target = uv;
 		vec2 offset = dir * (u_offsetPixels * pixel);
+		vec2 overflow = offset * 2.0;
 		// Move target away from center until it's outside the body.
-		for (int i = 0; i < 100; ++i) {
-			vec2 nearerTarget = target - offset * 2.0;
-			if ((getBody(target) + getBody(nearerTarget)) <= 0.0) break; // Exit if neither point is in the body.
+		for (int i = 0; i < 1024; ++i) {
+			if (length(target - u_poseCenter[i]) > length(overflow)) {
+				vec2 nearerTarget = target - overflow;
+				if ((getBody(target) + getBody(nearerTarget)) <= 0.0) break; // Exit if neither point is in the body.
+			}
 			target = clamp(target + offset, 0.0, 1.0);
 			if ((target.x <= 0.0 || target.x >= 1.0) || (target.y <= 0.0 || target.y >= 1.0)) break; // Exit if target is at the boundary.
 		}

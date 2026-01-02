@@ -5,7 +5,7 @@ import save from 'shaderpad/plugins/save';
 
 import fragmentShaderSrc from './face-camo.glsl';
 
-const OFFSET_PIXELS_MIN = 0;
+const OFFSET_PIXELS_MIN = 1;
 const OFFSET_PIXELS_MAX = 160;
 const OFFSET_PIXELS_INITIAL = 20;
 
