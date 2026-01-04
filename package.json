@@ -14,6 +14,6 @@
 		"vite-plugin-glsl": "^1.5.5"
 	},
 	"dependencies": {
-		"shaderpad": "^1.0.0-beta.29"
+		"shaderpad": "^1.0.0-beta.28"
 	}
 }
