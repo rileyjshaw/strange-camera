@@ -153,7 +153,7 @@ async function main() {
 		const gl = shader.canvas.getContext('webgl') || shader.canvas.getContext('webgl2');
 		gl.viewport(0, 0, exportWidth, exportHeight);
 		shader.draw();
-		await shader.save('odd-camera', window.location.href);
+		await shader.save(`Odd Camera - ${scenes[currentSceneIndex].name}`, window.location.href);
 		shader.canvas.width = originalWidth;
 		shader.canvas.height = originalHeight;
 		gl.viewport(0, 0, originalWidth, originalHeight);
