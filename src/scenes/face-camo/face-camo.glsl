@@ -14,7 +14,8 @@ void main() {
 
 	float closestCenter = 2.0;
 	for (int i = 0; i < u_nFaces; ++i) {
-		vec2 dir = uv - u_faceCenter[i]; // Vector from the center of the face to the current pixel.
+		vec2 faceCenter = vec2(faceLandmark(i, FACE_LANDMARK_FACE_CENTER));
+		vec2 dir = uv - faceCenter; // Vector from the center of the face to the current pixel.
 		float lenDir = length(dir); // Distance from the center of the face to the current pixel.
 		if (lenDir >= closestCenter) continue;
 
@@ -30,9 +31,9 @@ void main() {
 		vec2 overflow = offset * 6.0;
 		// Move target away from center until it's outside the face.
 		for (int i = 0; i < 1024; ++i) {
-			if (length(target - u_faceCenter[i]) > length(overflow)) {
+			if (length(target - faceCenter) > length(overflow)) {
 				vec2 nearerTarget = target - overflow;
-				if ((getFace(target) + getFace(nearerTarget)) <= 0.0) break; // Exit if neither point is in the face.
+				if ((inFace(target) + inFace(nearerTarget)) <= 0.0) break; // Exit if neither point is in the face.
 			}
 			target = clamp(target + offset, 0.0, 1.0);
 			if ((target.x <= 0.0 || target.x >= 1.0) || (target.y <= 0.0 || target.y >= 1.0)) break; // Exit if target is at the boundary.

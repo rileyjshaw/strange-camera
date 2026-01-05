@@ -12,18 +12,21 @@ void main() {
 	vec2 sampleUv = uv;
 
 	for (int i = 0; i < u_nFaces; ++i) {
-		vec2 mouthZoomed = u_mouth[i] + (uv - u_mouth[i]) / u_scale;
-		float mouthValue = getMouth(mouthZoomed);
+		vec2 mouth = vec2(faceLandmark(i, FACE_LANDMARK_MOUTH_CENTER));
+		vec2 mouthZoomed = mouth + (uv - mouth) / u_scale;
+		float mouthValue = inMouth(mouthZoomed);
         if (mouthValue > 0.0) sampleUv = mouthZoomed;
 		
-		bool isLeftEyeCloser = length(uv - u_leftEye[i]) < length(uv - u_rightEye[i]);
+		vec2 leftEye = vec2(faceLandmark(i, FACE_LANDMARK_L_EYE_CENTER));
+		vec2 rightEye = vec2(faceLandmark(i, FACE_LANDMARK_R_EYE_CENTER));
+		bool isLeftEyeCloser = length(uv - leftEye) < length(uv - rightEye);
 		if (isLeftEyeCloser) {
-			vec2 leftEyeZoomed = u_leftEye[i] + (uv - u_leftEye[i]) / u_scale;
-			float leftEyeValue = getEye(leftEyeZoomed);
+			vec2 leftEyeZoomed = leftEye + (uv - leftEye) / u_scale;
+			float leftEyeValue = inEye(leftEyeZoomed);
 			if (leftEyeValue > 0.6 && leftEyeValue < 0.7) sampleUv = leftEyeZoomed;
 		} else {
-			vec2 rightEyeZoomed = u_rightEye[i] + (uv - u_rightEye[i]) / u_scale;
-			float rightEyeValue = getEye(rightEyeZoomed);
+			vec2 rightEyeZoomed = rightEye + (uv - rightEye) / u_scale;
+			float rightEyeValue = inEye(rightEyeZoomed);
 			if (rightEyeValue > 0.8 && rightEyeValue < 0.9) sampleUv = rightEyeZoomed;
 		}
 	}

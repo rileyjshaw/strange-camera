@@ -14,7 +14,8 @@ void main() {
 
 	float closestCenter = 2.0;
 	for (int i = 0; i < u_nPoses; ++i) {
-		vec2 dir = uv - u_poseCenter[i]; // Vector from the center of the pose to the current pixel.
+		vec2 poseCenter = vec2(poseLandmark(i, POSE_LANDMARK_BODY_CENTER));
+		vec2 dir = uv - poseCenter; // Vector from the center of the pose to the current pixel.
 		float lenDir = length(dir); // Distance from the center of the pose to the current pixel.
 		if (lenDir >= closestCenter) continue;
 
@@ -30,9 +31,9 @@ void main() {
 		vec2 overflow = offset * 2.0;
 		// Move target away from center until it's outside the body.
 		for (int i = 0; i < 1024; ++i) {
-			if (length(target - u_poseCenter[i]) > length(overflow)) {
+			if (length(target - poseCenter) > length(overflow)) {
 				vec2 nearerTarget = target - overflow;
-				if ((getBody(target) + getBody(nearerTarget)) <= 0.0) break; // Exit if neither point is in the body.
+				if ((inBody(target) + inBody(nearerTarget)) <= 0.0) break; // Exit if neither point is in the body.
 			}
 			target = clamp(target + offset, 0.0, 1.0);
 			if ((target.x <= 0.0 || target.x >= 1.0) || (target.y <= 0.0 || target.y >= 1.0)) break; // Exit if target is at the boundary.
