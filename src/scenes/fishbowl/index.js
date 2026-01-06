@@ -1,12 +1,11 @@
 import ShaderPad from 'shaderpad';
-import helpers from 'shaderpad/plugins/helpers';
 import save from 'shaderpad/plugins/save';
 
-import fragmentShaderSrc from './globe.glsl';
+import fragmentShaderSrc from './fishbowl.glsl';
 
 export default {
-	name: 'Globe',
-	hash: 'globe',
+	name: 'Fishbowl',
+	hash: 'fishbowl',
 	controls: [[], []],
 	controlValues: {},
 	initialize(setShader) {
