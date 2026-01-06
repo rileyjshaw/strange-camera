@@ -51,9 +51,9 @@ function attachControls(scene, handleMove) {
 
 				let group;
 				if (direction === 'x') {
-					group = 1 + Math.floor((initialY * yControlsLength) / height);
+					group = 1 + Math.floor((initialY * xControlsLength) / height);
 				} else {
-					group = 1 + Math.floor((initialX * xControlsLength) / width);
+					group = 1 + Math.floor((initialX * yControlsLength) / width);
 				}
 				const key = `${direction}${group}`;
 				return { [key]: Math.max(0, Math.min(1, currentValues[key] + diff * precision[key])) };
