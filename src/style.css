@@ -35,41 +35,91 @@ body {
 	text-align: center;
 }
 
-#shutter {
+#controls {
+	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: flex-end;
+	gap: 16px;
+}
+
+.control-button-wrapper {
 	position: relative;
 	display: grid;
 	place-items: center;
+	background: #b0b0b0;
+	border-radius: 50%;
+}
+
+#shutter-wrapper {
 	height: 80px;
 	width: 80px;
-	background: #797979;
-	border-radius: 50%;
 }
 
-#shutter button {
+.control-button-wrapper:not(#shutter-wrapper) {
+	height: 52px;
+	width: 52px;
+}
+
+.control-button {
 	all: unset;
-	height: 68px;
-	width: 68px;
 	border-radius: 50%;
 	cursor: pointer;
-	background: var(--color-light);
-	transition: transform 0.2s ease;
+	background: radial-gradient(
+		circle at 30% 30%,
+		rgba(255, 255, 255, 0.8),
+		rgba(231, 229, 228, 0.4),
+		var(--color-light)
+	);
+	box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.6), inset -2px -2px 4px rgba(0, 0, 0, 0.1),
+		2px 2px 4px rgba(0, 0, 0, 0.1);
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
-#shutter button:hover:not(:active) {
-	background: var(--color-light);
+#shutter {
+	height: 68px;
+	width: 68px;
+}
+
+#open-menu,
+#rotate-camera {
+	height: 40px;
+	width: 40px;
+}
+
+.control-button:hover:not(:active) {
+	background: radial-gradient(
+		circle at 30% 30%,
+		rgba(255, 255, 255, 0.9),
+		rgba(231, 229, 228, 0.5),
+		var(--color-light)
+	);
+	box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.7), inset -2px -2px 4px rgba(0, 0, 0, 0.08),
+		3px 3px 6px rgba(0, 0, 0, 0.12);
 	transform: scale(1.04);
 }
 
-#shutter button:active {
+.control-button:active {
+	background: radial-gradient(
+		circle at 30% 30%,
+		rgba(231, 229, 228, 0.3),
+		rgba(200, 198, 197, 0.6),
+		var(--color-light)
+	);
+	box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.2), inset -1px -1px 2px rgba(255, 255, 255, 0.3),
+		1px 1px 2px rgba(0, 0, 0, 0.1);
 	transform: scale(0.88);
-	transition: transform 0.1s ease;
+	transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 #app.ready #instructions {
 	display: none;
 }
 
-#app:not(.ready) #shutter {
+#app:not(.ready) #controls {
 	display: none;
 }
 
@@ -107,7 +157,7 @@ body.settings-open #settings.populated {
 	opacity: 0.8;
 }
 
-body:is(.settings-open, .shutter-hidden) #shutter {
+body:is(.settings-open, .controls-hidden) #controls {
 	display: none;
 }
 

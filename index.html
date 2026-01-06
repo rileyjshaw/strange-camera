@@ -12,8 +12,16 @@
 	<body>
 		<div id="app">
 			<p id="instructions">Please allow webcam access to view this demo. No data is sent to the server.</p>
-			<div id="shutter">
-				<button aria-label="Take a photo"></button>
+			<div id="controls">
+				<div class="control-button-wrapper">
+					<button id="open-menu" class="control-button" aria-label="Open menu"></button>
+				</div>
+				<div id="shutter-wrapper" class="control-button-wrapper">
+					<button id="shutter" class="control-button" aria-label="Take a photo"></button>
+				</div>
+				<div class="control-button-wrapper">
+					<button id="rotate-camera" class="control-button" aria-label="Rotate camera"></button>
+				</div>
 			</div>
 			<div id="settings">
 				<div>

@@ -43,7 +43,7 @@ async function main() {
 	let currentFacingMode = 'user'; // Selfie camera.
 	document.body.classList.add('flipped');
 	let isSettingsOpen = false;
-	let isShutterHidden = false;
+	let isControlsHidden = false;
 
 	let shader;
 	let videoInput = await getWebcamStream(currentFacingMode);
@@ -53,7 +53,9 @@ async function main() {
 	let play;
 
 	const app = document.getElementById('app');
-	const shutter = document.querySelector('#shutter button');
+	const shutter = document.querySelector('#shutter');
+	const openMenu = document.querySelector('#open-menu');
+	const rotateCamera = document.querySelector('#rotate-camera');
 	app.classList.add('ready');
 
 	document.body.appendChild(videoInput); // HACK: Desktop Safari won’t update the shader otherwise.
@@ -183,14 +185,16 @@ async function main() {
 		}
 	}
 	shutter.addEventListener('click', exportHighRes);
+	openMenu.addEventListener('click', toggleSettings);
+	rotateCamera.addEventListener('click', switchCamera);
 
 	function toggleSettings() {
 		isSettingsOpen = !isSettingsOpen;
 		document.body.classList.toggle('settings-open', isSettingsOpen);
 	}
-	function toggleShutter() {
-		isShutterHidden = !isShutterHidden;
-		document.body.classList.toggle('shutter-hidden', isShutterHidden);
+	function toggleControls() {
+		isControlsHidden = !isControlsHidden;
+		document.body.classList.toggle('controls-hidden', isControlsHidden);
 	}
 
 	let cleanupScene;
@@ -219,7 +223,7 @@ async function main() {
 			case 'h':
 			case 'H':
 				if (!isSettingsOpen) {
-					toggleShutter();
+					toggleControls();
 				}
 				break;
 			case 'ArrowRight':
