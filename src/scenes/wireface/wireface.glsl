@@ -56,7 +56,7 @@ void main() {
 	vec2 texSize = vec2(textureSize(u_inputStream, 0));
 	vec2 uv = fitCover(v_uv, texSize);
 	float bg = step(0.5, u_backgroundColor);
-    float cameraMix = 1.0 - abs(u_backgroundColor * 2.0 - 1.0); // Black at 0, full webcam passthrough at 0.5, white at 1.
+	float cameraMix = 1.0 - abs(u_backgroundColor * 2.0 - 1.0); // Black at 0, full webcam passthrough at 0.5, white at 1.
 	vec3 color = mix(vec3(bg), texture(u_inputStream, uv).rgb, cameraMix);
 	
 	float lineMask = texture(u_faceMesh, uv).r;
