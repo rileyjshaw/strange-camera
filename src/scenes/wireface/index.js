@@ -47,7 +47,7 @@ export default {
 	initialize(setShader) {
 		currentLineWidth = LINE_WIDTH_INITIAL;
 		const lineCanvas = document.createElement('canvas');
-		lineCanvas.width = lineCanvas.height = 1024;
+		lineCanvas.width = lineCanvas.height = 512;
 		const lineCtx = lineCanvas.getContext('2d');
 
 		const shader = new ShaderPad(fragmentShaderSrc, {

@@ -22,6 +22,5 @@ void main() {
     vec2 uv = v_uv;
     uv = refractStrips(uv, vec2(u_nStrips, u_nStrips));
     uv = fitCover(uv, vec2(textureSize(u_inputStream, 0)));
-    uv.x = 1.0 - uv.x;
     fragColor = texture(u_inputStream, uv);
 }
