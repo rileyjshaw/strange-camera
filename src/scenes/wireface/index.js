@@ -10,6 +10,7 @@ const LINE_WIDTH_MIN = 0;
 const LINE_WIDTH_MAX = 6;
 const LINE_WIDTH_INITIAL = 1;
 const HUE_ROTATION_INITIAL = 0.3;
+const BACKGROUND_COLOR_INITIAL = 0.1;
 let currentLineWidth = LINE_WIDTH_INITIAL;
 
 const segments = FaceLandmarker.FACE_LANDMARKS_TESSELATION;
@@ -37,11 +38,11 @@ function renderLinesToCanvas(ctx, faceLandmarks, lineWidth) {
 export default {
 	name: 'Wireface',
 	hash: 'wireface',
-	controls: [['Line width'], ['Background color', 'Hue rotation']],
+	controls: [['Line width'], ['Mask color', 'Background color']],
 	controlValues: {
 		x1: (LINE_WIDTH_INITIAL - LINE_WIDTH_MIN) / (LINE_WIDTH_MAX - LINE_WIDTH_MIN),
-		y1: 0.0,
-		y2: HUE_ROTATION_INITIAL,
+		y1: HUE_ROTATION_INITIAL,
+		y2: BACKGROUND_COLOR_INITIAL,
 	},
 	initialize(setShader) {
 		currentLineWidth = LINE_WIDTH_INITIAL;
@@ -68,8 +69,8 @@ export default {
 			],
 		});
 
-		shader.initializeUniform('u_backgroundColor', 'float', 0.0);
 		shader.initializeUniform('u_hueRotation', 'float', HUE_ROTATION_INITIAL);
+		shader.initializeUniform('u_backgroundColor', 'float', BACKGROUND_COLOR_INITIAL);
 		shader.initializeTexture('u_faceMesh', lineCanvas);
 
 		setShader(shader);
@@ -77,8 +78,8 @@ export default {
 	onUpdate({ x1, y1, y2 }, shader) {
 		currentLineWidth = LINE_WIDTH_MIN + x1 * (LINE_WIDTH_MAX - LINE_WIDTH_MIN);
 		shader.updateUniforms({
-			u_backgroundColor: y1,
-			u_hueRotation: y2,
+			u_hueRotation: y1,
+			u_backgroundColor: y2,
 		});
 	},
 };
