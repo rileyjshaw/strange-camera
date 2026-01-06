@@ -130,35 +130,32 @@ async function main() {
 
 	async function exportHighRes() {
 		shader.pause();
-		let exportWidth, exportHeight;
-		if (imageInput) {
-			exportWidth = imageInput.naturalWidth;
-			exportHeight = imageInput.naturalHeight;
-		} else {
-			exportWidth = videoInput.videoWidth;
-			exportHeight = videoInput.videoHeight;
-		}
-
-		if (exportWidth > MAX_EXPORT_DIMENSION || exportHeight > MAX_EXPORT_DIMENSION) {
+		const { width: canvasWidth, height: canvasHeight } = shader.canvas;
+		let exportWidth = canvasWidth,
+			exportHeight = canvasHeight,
+			gl;
+		const needsResize = exportWidth > MAX_EXPORT_DIMENSION || exportHeight > MAX_EXPORT_DIMENSION;
+		if (needsResize) {
 			const aspectRatio = exportWidth / exportHeight;
-			if (exportWidth > exportHeight) {
+			if (aspectRatio > 1) {
 				exportWidth = MAX_EXPORT_DIMENSION;
 				exportHeight = Math.round(MAX_EXPORT_DIMENSION / aspectRatio);
 			} else {
 				exportHeight = MAX_EXPORT_DIMENSION;
 				exportWidth = Math.round(MAX_EXPORT_DIMENSION * aspectRatio);
 			}
+			shader.canvas.width = exportWidth;
+			shader.canvas.height = exportHeight;
+			gl = shader.canvas.getContext('webgl') || shader.canvas.getContext('webgl2');
+			gl.viewport(0, 0, exportWidth, exportHeight);
+			shader.draw();
 		}
-		const { width: originalWidth, height: originalHeight } = shader.canvas;
-		shader.canvas.width = exportWidth;
-		shader.canvas.height = exportHeight;
-		const gl = shader.canvas.getContext('webgl') || shader.canvas.getContext('webgl2');
-		gl.viewport(0, 0, exportWidth, exportHeight);
-		shader.draw();
 		await shader.save(`Odd Camera - ${scenes[currentSceneIndex].name}`, window.location.href);
-		shader.canvas.width = originalWidth;
-		shader.canvas.height = originalHeight;
-		gl.viewport(0, 0, originalWidth, originalHeight);
+		if (needsResize) {
+			shader.canvas.width = canvasWidth;
+			shader.canvas.height = canvasHeight;
+			gl.viewport(0, 0, canvasWidth, canvasHeight);
+		}
 		play();
 	}
 
