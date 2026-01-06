@@ -205,7 +205,7 @@ async function main() {
 		{
 			onMove(direction, diff) {
 				if (direction === 'y') return;
-				const newIndex = (currentSceneIndex + Math.sign(diff) + scenes.length) % scenes.length;
+				const newIndex = (currentSceneIndex - Math.sign(diff) + scenes.length) % scenes.length;
 				switchToScene(newIndex);
 			},
 		},

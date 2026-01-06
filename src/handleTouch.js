@@ -55,7 +55,7 @@ export default function handleTouch(
 		if (direction && once) return;
 
 		const diffX = touch.clientX - x;
-		const diffY = touch.clientY - y;
+		const diffY = y - touch.clientY; // +ve when moving up.
 
 		if (!direction && (Math.abs(diffX) > moveThresholdPx || Math.abs(diffY) > moveThresholdPx)) {
 			direction = Math.abs(diffX) > Math.abs(diffY) ? 'x' : 'y';
