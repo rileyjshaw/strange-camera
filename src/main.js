@@ -11,18 +11,19 @@ let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? sceneHashToIndex.get('w
 
 const MAX_EXPORT_DIMENSION = 4096;
 
-async function getWebcamStream(facingMode = 'user') {
+let hasGottenWebcamStream = false;
+async function getWebcamStream(facingMode = 'user', deviceId = null) {
 	const video = document.createElement('video');
 	video.autoplay = video.playsInline = video.muted = true;
 
 	try {
 		const constraints = {
-			video: {
-				facingMode,
-				width: { ideal: 1280, max: 1920 },
-			},
+			video: deviceId
+				? { deviceId: { exact: deviceId }, width: { ideal: 1280, max: 1920 } }
+				: { facingMode, width: { ideal: 1280, max: 1920 } },
 		};
 		const stream = await navigator.mediaDevices.getUserMedia(constraints);
+		hasGottenWebcamStream = true;
 		video.srcObject = stream;
 		await new Promise(resolve => (video.onloadedmetadata = resolve));
 	} catch (error) {
@@ -31,6 +32,14 @@ async function getWebcamStream(facingMode = 'user') {
 	}
 
 	return video;
+}
+
+async function listCameras() {
+	if (!hasGottenWebcamStream) {
+		throw new Error('Webcam stream not yet obtained');
+	}
+	const devices = await navigator.mediaDevices.enumerateDevices();
+	return devices.filter(d => d.kind === 'videoinput');
 }
 
 // “x” is the shorter axis, which corresponds to the actual x axis on a phone.
@@ -45,12 +54,36 @@ async function main() {
 	let isSettingsOpen = false;
 	let isControlsHidden = false;
 
+	let allCameras = [];
+	let camerasByFacingMode = { user: [], environment: [] };
+	let currentCameraIndex = { user: 0, environment: 0 };
+	let currentDeviceId = null;
+
 	let shader;
 	let videoInput = await getWebcamStream(currentFacingMode);
 	let imageInput = null;
 	let currentVideoUrl = null;
 
 	let play;
+
+	async function updateCameraList() {
+		allCameras = await listCameras();
+		camerasByFacingMode.user = allCameras;
+		camerasByFacingMode.environment = allCameras;
+	}
+
+	await updateCameraList();
+	if (videoInput.srcObject) {
+		const track = videoInput.srcObject.getVideoTracks()[0];
+		if (track) {
+			currentDeviceId = track.getSettings().deviceId;
+			const cameras = camerasByFacingMode[currentFacingMode];
+			const index = cameras.findIndex(c => c.deviceId === currentDeviceId);
+			if (index !== -1) {
+				currentCameraIndex[currentFacingMode] = index;
+			}
+		}
+	}
 
 	const app = document.getElementById('app');
 	const shutter = document.querySelector('#shutter');
@@ -174,14 +207,61 @@ async function main() {
 		removeVideoInput();
 
 		const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+		currentCameraIndex[newFacingMode] = 0;
+		currentDeviceId = null;
 		try {
 			videoInput = await getWebcamStream(newFacingMode);
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			shader.updateTextures({ u_inputStream: videoInput });
 			currentFacingMode = newFacingMode;
 			document.body.classList.toggle('flipped', newFacingMode === 'user');
+			await updateCameraList();
+			if (videoInput.srcObject) {
+				const track = videoInput.srcObject.getVideoTracks()[0];
+				if (track) {
+					currentDeviceId = track.getSettings().deviceId;
+					const cameras = camerasByFacingMode[currentFacingMode];
+					const index = cameras.findIndex(c => c.deviceId === currentDeviceId);
+					if (index !== -1) {
+						currentCameraIndex[currentFacingMode] = index;
+					}
+				}
+			}
 		} catch (error) {
 			console.error('Failed to switch camera:', error);
+		}
+	}
+
+	async function switchToNextCamera() {
+		if (imageInput) return;
+		if (videoInput && videoInput.src && !videoInput.srcObject) return;
+
+		const cameras = camerasByFacingMode[currentFacingMode];
+		if (cameras.length <= 1) return;
+
+		await updateCameraList();
+		const updatedCameras = camerasByFacingMode[currentFacingMode];
+		if (updatedCameras.length <= 1) return;
+
+		currentCameraIndex[currentFacingMode] = (currentCameraIndex[currentFacingMode] + 1) % updatedCameras.length;
+		const nextCamera = updatedCameras[currentCameraIndex[currentFacingMode]];
+
+		try {
+			removeVideoInput();
+			videoInput = await getWebcamStream(currentFacingMode, nextCamera.deviceId);
+			currentDeviceId = nextCamera.deviceId;
+			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
+			shader.updateTextures({ u_inputStream: videoInput });
+		} catch (error) {
+			console.error('Failed to switch to next camera:', error);
+			// Try falling back to facingMode-only constraint
+			try {
+				videoInput = await getWebcamStream(currentFacingMode);
+				document.body.appendChild(videoInput);
+				shader.updateTextures({ u_inputStream: videoInput });
+			} catch (fallbackError) {
+				console.error('Failed to fallback to facingMode camera:', fallbackError);
+			}
 		}
 	}
 	shutter.addEventListener('click', exportHighRes);
@@ -233,6 +313,12 @@ async function main() {
 					toggleControls();
 				}
 				break;
+			case 'c':
+			case 'C':
+				if (!isSettingsOpen) {
+					switchToNextCamera();
+				}
+				break;
 			case 'ArrowRight':
 				if (isSettingsOpen) {
 					switchToScene((currentSceneIndex + 1) % scenes.length);
@@ -255,7 +341,7 @@ async function main() {
 					if (!isSettingsOpen) switchCamera();
 					break;
 				case 3:
-					toggleSettings();
+					if (!isSettingsOpen) switchToNextCamera();
 					break;
 			}
 		},
