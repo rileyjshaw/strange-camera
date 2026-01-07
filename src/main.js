@@ -75,20 +75,16 @@ async function main() {
 	let play;
 
 	const app = document.getElementById('app');
-	const shutter = document.querySelector('#shutter');
-	const openMenu = document.querySelector('#open-menu');
-	const flipCamera = document.querySelector('#flip-camera');
+	const shutterButton = document.querySelector('#shutter');
+	const openMenuButton = document.querySelector('#open-menu');
+	const flipCameraButton = document.querySelector('#flip-camera');
 	const scenePrev = document.querySelector('#scene-prev');
 	const sceneNext = document.querySelector('#scene-next');
 	const goButton = document.querySelector('#go-button');
 	app.classList.add('ready');
 
 	function updateFlipCameraButton() {
-		if (allCameras.length <= 1) {
-			flipCamera.disabled = true;
-		} else {
-			flipCamera.disabled = false;
-		}
+		flipCameraButton.disabled = allCameras.length <= 1;
 	}
 
 	async function updateCameraList() {
@@ -289,9 +285,9 @@ async function main() {
 			}
 		}
 	}
-	shutter.addEventListener('click', exportHighRes);
-	openMenu.addEventListener('click', toggleSettings);
-	flipCamera.addEventListener('click', flipCamera);
+	shutterButton.addEventListener('click', exportHighRes);
+	openMenuButton.addEventListener('click', toggleSettings);
+	flipCameraButton.addEventListener('click', flipCamera);
 	goButton.addEventListener('click', toggleSettings);
 	scenePrev.addEventListener('click', () => {
 		switchToScene((currentSceneIndex - 1 + scenes.length) % scenes.length);
