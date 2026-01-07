@@ -51,7 +51,8 @@ body {
 
 #app {
 	position: fixed;
-	bottom: 1em;
+	inset: 0;
+	padding: 1rem;
 	z-index: 2;
 	display: flex;
 	justify-content: center;
@@ -64,6 +65,8 @@ body {
 	padding-bottom: 1em;
 	text-wrap: balance;
 	text-align: center;
+	margin: auto;
+	font-size: 2rem;
 }
 
 #controls {
