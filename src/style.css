@@ -39,8 +39,9 @@
 body {
 	--color-light: #e7e5e4;
 	--color-dark: #0c0a09;
-	--settings-margin: 30px;
+	--settings-margin: 1rem;
 	--visual-control-size: 33;
+	--shadow-y-offset: 0.15em;
 	margin: 0;
 	overflow: hidden;
 	color: var(--color-light);
@@ -210,8 +211,8 @@ body:is(.settings-open, .controls-hidden) #controls {
 	align-items: center;
 	justify-content: space-between;
 	gap: 0.5em;
-	font-family: 'Megazoid', sans-serif;
 	font-size: 2.5rem;
+	font-family: 'Megazoid', sans-serif;
 }
 
 .scene-navigation {
@@ -224,13 +225,13 @@ body:is(.settings-open, .controls-hidden) #controls {
 }
 
 #settings h2 {
-	margin: 0.5rem 0 1rem;
+	font-size: 1em;
+	margin: 0.5rem 0 calc(1rem + var(--shadow-y-offset));
 }
 
 #settings h2,
 .go-button {
 	font-weight: normal;
-	font-size: 1em;
 	text-align: center;
 	flex: 1;
 	position: relative;
@@ -247,7 +248,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 	pointer-events: none;
 	color: #888;
 	position: absolute;
-	top: 0.15em;
+	top: var(--shadow-y-offset);
 	left: 50%;
 	transform: translateX(-50%);
 	white-space: nowrap;
