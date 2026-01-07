@@ -56,6 +56,8 @@ async function main() {
 	const shutter = document.querySelector('#shutter');
 	const openMenu = document.querySelector('#open-menu');
 	const rotateCamera = document.querySelector('#rotate-camera');
+	const scenePrev = document.querySelector('#scene-prev');
+	const sceneNext = document.querySelector('#scene-next');
 	app.classList.add('ready');
 
 	document.body.appendChild(videoInput); // HACK: Desktop Safari won’t update the shader otherwise.
@@ -184,6 +186,12 @@ async function main() {
 	shutter.addEventListener('click', exportHighRes);
 	openMenu.addEventListener('click', toggleSettings);
 	rotateCamera.addEventListener('click', switchCamera);
+	scenePrev.addEventListener('click', () => {
+		switchToScene((currentSceneIndex - 1 + scenes.length) % scenes.length);
+	});
+	sceneNext.addEventListener('click', () => {
+		switchToScene((currentSceneIndex + 1) % scenes.length);
+	});
 
 	function toggleSettings() {
 		isSettingsOpen = !isSettingsOpen;

@@ -1,9 +1,39 @@
 @font-face {
-	font-family: 'TRJNDaVinci';
-	src: url('./TRJNDaVinci-Regular.woff') format('woff');
+	font-family: 'Megazoid';
+	src: url('./assets/fonts/Megazoid-Regular.woff2') format('woff2');
 	font-weight: normal;
 	font-style: normal;
 	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Megazoid Fill';
+	src: url('./assets/fonts/Megazoid-Fill.woff2') format('woff2');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Megazoid Shade Left';
+	src: url('./assets/fonts/Megazoid-ShadeLeft.woff2') format('woff2');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: 'Megazoid Shade Right';
+	src: url('./assets/fonts/Megazoid-ShadeRight.woff2') format('woff2');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
 }
 
 body {
@@ -15,7 +45,8 @@ body {
 	overflow: hidden;
 	color: var(--color-light);
 	background: var(--color-dark);
-	font-family: 'TRJNDaVinci', sans-serif;
+	font-family: 'Megazoid', sans-serif;
+	font-size: 1.25rem;
 }
 
 #app {
@@ -161,10 +192,74 @@ body:is(.settings-open, .controls-hidden) #controls {
 	display: none;
 }
 
+.scene-navigation {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1em;
+	padding: 0 0.5em;
+	font-family: 'Megazoid', sans-serif;
+	font-size: 2.5rem;
+}
+
 #settings h2 {
 	font-weight: normal;
-	font-size: 2.5rem;
+	font-size: 1em;
 	text-align: center;
+	flex: 1;
+	position: relative;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+#settings h2::after {
+	content: attr(data-text);
+	font-family: 'Megazoid Fill', sans-serif;
+	z-index: -1;
+	pointer-events: none;
+	color: #888;
+	position: absolute;
+	top: 0.15em;
+	left: 50%;
+	transform: translateX(-50%);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+.scene-nav-button {
+	all: unset;
+	cursor: pointer;
+	position: relative;
+	display: inline-block;
+}
+
+.scene-nav-button::before {
+	content: attr(data-char);
+	position: absolute;
+	top: 0;
+	left: 0;
+	font-family: 'Megazoid Fill', sans-serif;
+	z-index: -1;
+	pointer-events: none;
+	color: #fff;
+}
+
+.scene-nav-button::after {
+	content: attr(data-char);
+	position: absolute;
+	top: 0;
+	left: 0;
+	font-family: 'Megazoid Shade Right', sans-serif;
+	z-index: -2;
+	pointer-events: none;
+	color: #888;
+}
+
+#scene-next::after {
+	font-family: 'Megazoid Shade Left', sans-serif;
 }
 
 .visual-controls {
@@ -179,13 +274,13 @@ body:is(.settings-open, .controls-hidden) #controls {
 		align-items: center;
 		height: calc(var(--visual-control-size) * 1dvh);
 		width: calc(var(--visual-control-size) * 1dvw);
-		border: 1px solid currentColor;
+		border: 2px solid currentColor;
 		border-radius: 6px;
 		& > div {
 			inline-size: calc(100% - 30px);
 			position: relative;
 			counter-increment: item;
-			border-inline: 1px solid currentColor;
+			border-inline: 2px solid currentColor;
 			&::before {
 				content: '';
 				position: absolute;
@@ -194,7 +289,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 				transform: translate(-50%, -50%);
 				display: block;
 				inline-size: 100%;
-				block-size: 1px;
+				block-size: 2px;
 				background: currentColor;
 			}
 			&::after {
@@ -204,7 +299,8 @@ body:is(.settings-open, .controls-hidden) #controls {
 				width: 2em;
 				height: 2em;
 				place-items: center;
-				border: 1px solid currentColor;
+				padding-top: 0.2em;
+				border: 2px solid currentColor;
 				border-radius: 50%;
 				background: var(--color-light);
 				writing-mode: horizontal-tb;
@@ -239,10 +335,11 @@ body:is(.settings-open, .controls-hidden) #controls {
 			width: 2em;
 			height: 2em;
 			display: inline-grid;
+			padding-top: 0.2em;
 			margin-right: 1em;
 			place-items: center;
 			border-radius: 50%;
-			border: 1px solid currentColor;
+			border: 2px solid currentColor;
 		}
 	}
 }

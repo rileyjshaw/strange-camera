@@ -30,6 +30,7 @@ function attachControls(scene, handleMove) {
 	const precisionOverrides = scene.controlPrecision ?? {};
 
 	titleEl.textContent = scene.name;
+	titleEl.setAttribute('data-text', scene.name);
 	scene.controls.forEach((controls, i) => {
 		controls.forEach(controlName => {
 			const div = document.createElement('div');
