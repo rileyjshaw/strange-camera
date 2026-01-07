@@ -184,7 +184,7 @@ video {
 	background: var(--color-light);
 	border-radius: 6px;
 	opacity: 0;
-	transition: opacity 0.2s ease;
+	transition: opacity 0.1s ease;
 	display: flex;
 	flex-direction: column;
 }
@@ -257,6 +257,17 @@ body:is(.settings-open, .controls-hidden) #controls {
 	max-width: 100%;
 }
 
+.scene-navigation button {
+	transition: color 0.1s ease;
+}
+.scene-navigation button:hover:not(:active) {
+	color: #fff;
+}
+.scene-navigation button:active,
+.scene-navigation button:focus {
+	color: #f50;
+}
+
 .scene-nav-button {
 	all: unset;
 	cursor: pointer;
@@ -272,7 +283,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 	font-family: 'Megazoid Fill', sans-serif;
 	z-index: -1;
 	pointer-events: none;
-	color: #fff;
+	color: var(--color-light);
 }
 
 .scene-nav-button::after {
