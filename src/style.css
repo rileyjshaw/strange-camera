@@ -181,6 +181,15 @@ video {
 	border-radius: 6px;
 	opacity: 0;
 	transition: opacity 0.2s ease;
+	display: flex;
+	flex-direction: column;
+}
+
+.settings-content {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	padding: 1rem;
 }
 
 body.settings-open #settings.populated {
@@ -192,17 +201,31 @@ body:is(.settings-open, .controls-hidden) #controls {
 	display: none;
 }
 
+.scene-title,
 .scene-navigation {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 0.5em;
-	padding: 0 0.5em;
 	font-family: 'Megazoid', sans-serif;
 	font-size: 2.5rem;
 }
 
+.scene-navigation {
+	margin-top: auto;
+}
+
+.go-button {
+	all: unset;
+	cursor: pointer;
+}
+
 #settings h2 {
+	margin: 0.5rem 0 1rem;
+}
+
+#settings h2,
+.go-button {
 	font-weight: normal;
 	font-size: 1em;
 	text-align: center;
@@ -213,7 +236,8 @@ body:is(.settings-open, .controls-hidden) #controls {
 	text-overflow: ellipsis;
 }
 
-#settings h2::after {
+#settings h2::after,
+.go-button::after {
 	content: attr(data-text);
 	font-family: 'Megazoid Fill', sans-serif;
 	z-index: -1;
@@ -325,7 +349,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 #controls-list-move {
 	list-style: none;
 	counter-reset: item;
-	padding: 2em 0 0 calc(((100 - var(--visual-control-size) * 2) * 1dvw - var(--settings-margin) * 2) / 3);
+	padding: 1em 0 0 calc(((100 - var(--visual-control-size) * 2) * 1dvw - var(--settings-margin) * 2) / 3);
 	& > li {
 		counter-increment: item;
 		position: relative;
