@@ -11,8 +11,8 @@ let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? sceneHashToIndex.get('w
 
 const MAX_EXPORT_DIMENSION = 4096;
 
-let hasGottenWebcamStream = false;
-async function getWebcamStream(facingMode = 'user', deviceId = null) {
+let hasCameraPermission = false;
+async function getCameraStream(facingMode = 'user', deviceId = null) {
 	const video = document.createElement('video');
 	video.autoplay = video.playsInline = video.muted = true;
 
@@ -23,7 +23,7 @@ async function getWebcamStream(facingMode = 'user', deviceId = null) {
 				: { facingMode, width: { ideal: 1280, max: 1920 } },
 		};
 		const stream = await navigator.mediaDevices.getUserMedia(constraints);
-		hasGottenWebcamStream = true;
+		hasCameraPermission = true;
 		video.srcObject = stream;
 		await new Promise(resolve => (video.onloadedmetadata = resolve));
 	} catch (error) {
@@ -34,8 +34,15 @@ async function getWebcamStream(facingMode = 'user', deviceId = null) {
 	return video;
 }
 
+function guessCameraFacing(device) {
+	const label = device.label.toLowerCase();
+	if (label.includes('front') || label.includes('user')) return 'user';
+	if (label.includes('back') || label.includes('rear')) return 'environment';
+	return 'user';
+}
+
 async function listCameras() {
-	if (!hasGottenWebcamStream) {
+	if (!hasCameraPermission) {
 		throw new Error('Webcam stream not yet obtained');
 	}
 	const devices = await navigator.mediaDevices.enumerateDevices();
@@ -58,18 +65,44 @@ async function main() {
 	let camerasByFacingMode = { user: [], environment: [] };
 	let currentCameraIndex = { user: 0, environment: 0 };
 	let currentDeviceId = null;
+	let hasBothFacingModes = false;
 
 	let shader;
-	let videoInput = await getWebcamStream(currentFacingMode);
+	let videoInput = await getCameraStream(currentFacingMode);
 	let imageInput = null;
 	let currentVideoUrl = null;
 
 	let play;
 
+	const app = document.getElementById('app');
+	const shutter = document.querySelector('#shutter');
+	const openMenu = document.querySelector('#open-menu');
+	const flipCamera = document.querySelector('#flip-camera');
+	const scenePrev = document.querySelector('#scene-prev');
+	const sceneNext = document.querySelector('#scene-next');
+	const goButton = document.querySelector('#go-button');
+	app.classList.add('ready');
+
+	function updateFlipCameraButton() {
+		if (allCameras.length <= 1) {
+			flipCamera.disabled = true;
+		} else {
+			flipCamera.disabled = false;
+		}
+	}
+
 	async function updateCameraList() {
 		allCameras = await listCameras();
-		camerasByFacingMode.user = allCameras;
-		camerasByFacingMode.environment = allCameras;
+		camerasByFacingMode.user = [];
+		camerasByFacingMode.environment = [];
+
+		for (const camera of allCameras) {
+			const facing = guessCameraFacing(camera);
+			camerasByFacingMode[facing].push(camera);
+		}
+
+		hasBothFacingModes = camerasByFacingMode.user.length > 0 && camerasByFacingMode.environment.length > 0;
+		updateFlipCameraButton();
 	}
 
 	await updateCameraList();
@@ -81,18 +114,11 @@ async function main() {
 			const index = cameras.findIndex(c => c.deviceId === currentDeviceId);
 			if (index !== -1) {
 				currentCameraIndex[currentFacingMode] = index;
+			} else if (cameras.length > 0) {
+				currentCameraIndex[currentFacingMode] = 0;
 			}
 		}
 	}
-
-	const app = document.getElementById('app');
-	const shutter = document.querySelector('#shutter');
-	const openMenu = document.querySelector('#open-menu');
-	const rotateCamera = document.querySelector('#rotate-camera');
-	const scenePrev = document.querySelector('#scene-prev');
-	const sceneNext = document.querySelector('#scene-next');
-	const goButton = document.querySelector('#go-button');
-	app.classList.add('ready');
 
 	document.body.appendChild(videoInput); // HACK: Desktop Safari won’t update the shader otherwise.
 
@@ -201,16 +227,18 @@ async function main() {
 		}
 	}
 
-	async function switchCamera() {
+	async function flipCamera() {
 		if (imageInput) return;
 		if (videoInput && videoInput.src && !videoInput.srcObject) return;
-		removeVideoInput();
 
+		if (!hasBothFacingModes) return await cycleCamera();
+
+		removeVideoInput();
 		const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
 		currentCameraIndex[newFacingMode] = 0;
 		currentDeviceId = null;
 		try {
-			videoInput = await getWebcamStream(newFacingMode);
+			videoInput = await getCameraStream(newFacingMode);
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			shader.updateTextures({ u_inputStream: videoInput });
 			currentFacingMode = newFacingMode;
@@ -232,23 +260,20 @@ async function main() {
 		}
 	}
 
-	async function switchToNextCamera() {
+	async function cycleCamera() {
 		if (imageInput) return;
 		if (videoInput && videoInput.src && !videoInput.srcObject) return;
 
+		await updateCameraList();
 		const cameras = camerasByFacingMode[currentFacingMode];
 		if (cameras.length <= 1) return;
 
-		await updateCameraList();
-		const updatedCameras = camerasByFacingMode[currentFacingMode];
-		if (updatedCameras.length <= 1) return;
-
-		currentCameraIndex[currentFacingMode] = (currentCameraIndex[currentFacingMode] + 1) % updatedCameras.length;
-		const nextCamera = updatedCameras[currentCameraIndex[currentFacingMode]];
+		currentCameraIndex[currentFacingMode] = (currentCameraIndex[currentFacingMode] + 1) % cameras.length;
+		const nextCamera = cameras[currentCameraIndex[currentFacingMode]];
 
 		try {
 			removeVideoInput();
-			videoInput = await getWebcamStream(currentFacingMode, nextCamera.deviceId);
+			videoInput = await getCameraStream(currentFacingMode, nextCamera.deviceId);
 			currentDeviceId = nextCamera.deviceId;
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			shader.updateTextures({ u_inputStream: videoInput });
@@ -256,7 +281,7 @@ async function main() {
 			console.error('Failed to switch to next camera:', error);
 			// Try falling back to facingMode-only constraint
 			try {
-				videoInput = await getWebcamStream(currentFacingMode);
+				videoInput = await getCameraStream(currentFacingMode);
 				document.body.appendChild(videoInput);
 				shader.updateTextures({ u_inputStream: videoInput });
 			} catch (fallbackError) {
@@ -266,7 +291,7 @@ async function main() {
 	}
 	shutter.addEventListener('click', exportHighRes);
 	openMenu.addEventListener('click', toggleSettings);
-	rotateCamera.addEventListener('click', switchCamera);
+	flipCamera.addEventListener('click', flipCamera);
 	goButton.addEventListener('click', toggleSettings);
 	scenePrev.addEventListener('click', () => {
 		switchToScene((currentSceneIndex - 1 + scenes.length) % scenes.length);
@@ -316,7 +341,7 @@ async function main() {
 			case 'c':
 			case 'C':
 				if (!isSettingsOpen) {
-					switchToNextCamera();
+					cycleCamera();
 				}
 				break;
 			case 'ArrowRight':
@@ -338,10 +363,10 @@ async function main() {
 			if (!(await checkFinalTap)) return;
 			switch (tapCount) {
 				case 2:
-					if (!isSettingsOpen) switchCamera();
+					if (!isSettingsOpen) flipCamera();
 					break;
 				case 3:
-					if (!isSettingsOpen) switchToNextCamera();
+					if (!isSettingsOpen) cycleCamera();
 					break;
 			}
 		},
