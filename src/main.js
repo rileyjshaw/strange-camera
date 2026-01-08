@@ -208,7 +208,7 @@ async function main() {
 			gl.viewport(0, 0, exportWidth, exportHeight);
 			shader.draw();
 		}
-		await shader.save(`Odd Camera - ${scenes[currentSceneIndex].name}`, window.location.href);
+		await shader.save(`Strange Camera - ${scenes[currentSceneIndex].name}`, window.location.href);
 		if (needsResize) {
 			shader.canvas.width = canvasWidth;
 			shader.canvas.height = canvasHeight;

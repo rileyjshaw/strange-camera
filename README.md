@@ -1,4 +1,4 @@
-# Odd Camera
+# Strange Camera
 
 ## Controls
 
