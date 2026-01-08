@@ -22,7 +22,7 @@ void main() {
 	vec3 inputColor = texture(u_inputStream, uv).rgb;
 	float eyeFadeFactor = smoothstep(0.002, 0.05, minDist);
 	vec3 eyeColor = vec3(mix(u_color, 0.5, eyeFadeFactor));
-	vec3 color = inEye(uv) > 0.5 ? eyeColor : inputColor;
+	vec3 color = mix(inputColor, eyeColor, inEye(uv));
 
 	float glowFactor = 1.2 * pow(smoothstep(maxRadius, 0.0, minDist), 3.0);
 	glowFactor *= u_glow;

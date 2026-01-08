@@ -33,7 +33,7 @@ void main() {
 		for (int i = 0; i < 1024; ++i) {
 			if (length(target - poseCenter) > length(overflow)) {
 				vec2 nearerTarget = target - overflow;
-				if ((inBody(target) + inBody(nearerTarget)) <= 0.0) break; // Exit if neither point is in the body.
+				if ((inPose(target) + inPose(nearerTarget)) <= 0.0) break; // Exit if neither point is in the body.
 			}
 			target = clamp(target + offset, 0.0, 1.0);
 			if ((target.x <= 0.0 || target.x >= 1.0) || (target.y <= 0.0 || target.y >= 1.0)) break; // Exit if target is at the boundary.
