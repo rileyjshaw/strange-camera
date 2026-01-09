@@ -63,17 +63,29 @@ body {
 	animation: fadeIn 0.5s ease 0.5s forwards;
 }
 
+h1,
+#instructions {
+	font-size: 2rem;
+	text-align: center;
+	text-wrap: balance;
+}
+
 h1 {
-	font-size: 3rem;
-	margin: 0;
+	margin: 0 auto;
 	padding-top: 1rem;
 }
 
 #instructions {
 	margin-top: auto;
-	text-wrap: balance;
-	text-align: center;
-	font-size: 2rem;
+}
+
+#app.ready h1,
+#app.ready #instructions {
+	display: none;
+}
+
+#app:not(.ready) #controls {
+	display: none;
 }
 
 #controls {
@@ -155,15 +167,6 @@ h1 {
 		1px 1px 2px rgba(0, 0, 0, 0.1);
 	transform: scale(0.88);
 	transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-#app.ready h1,
-#app.ready #instructions {
-	display: none;
-}
-
-#app:not(.ready) #controls {
-	display: none;
 }
 
 canvas {
