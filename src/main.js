@@ -7,7 +7,7 @@ function updateUrlHash(scene) {
 }
 
 const urlHash = window.location.hash.slice(1);
-let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? sceneHashToIndex.get('wiggle-y');
+let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? sceneHashToIndex.get('big-face');
 
 const MAX_EXPORT_DIMENSION = 4096;
 
