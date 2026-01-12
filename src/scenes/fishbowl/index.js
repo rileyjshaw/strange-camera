@@ -3,14 +3,19 @@ import save from 'shaderpad/plugins/save';
 
 import fragmentShaderSrc from './fishbowl.glsl';
 
+const SHADOW_INITIAL = 0.25;
+
 export default {
 	name: 'Fishbowl',
 	hash: 'fishbowl',
-	controls: [[], []],
-	controlValues: {},
-	initialize(setShader) {
-		const shader = new ShaderPad(fragmentShaderSrc, { plugins: [save()] });
+	controls: [['Shadow'], []],
+	controlValues: { x1: SHADOW_INITIAL },
+	initialize(setShader, canvas) {
+		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [save()] });
+		shader.initializeUniform('u_shadow', 'float', SHADOW_INITIAL);
 		setShader(shader);
 	},
-	onUpdate(_uniformValues, _shader) {},
+	onUpdate({ x1 }, shader) {
+		shader.updateUniforms({ u_shadow: x1 });
+	},
 };
