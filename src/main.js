@@ -75,6 +75,9 @@ async function main() {
 	let play;
 
 	const app = document.getElementById('app');
+	const canvas = document.querySelector('canvas');
+	const gl = canvas.getContext('webgl2', { antialias: false });
+
 	const shutterButton = document.querySelector('#shutter');
 	const openMenuButton = document.querySelector('#open-menu');
 	const flipCameraButton = document.querySelector('#flip-camera');
@@ -188,10 +191,9 @@ async function main() {
 
 	async function exportHighRes() {
 		shader.pause();
-		const { width: canvasWidth, height: canvasHeight } = shader.canvas;
+		const { width: canvasWidth, height: canvasHeight } = canvas;
 		let exportWidth = canvasWidth,
-			exportHeight = canvasHeight,
-			gl;
+			exportHeight = canvasHeight;
 		const needsResize = exportWidth > MAX_EXPORT_DIMENSION || exportHeight > MAX_EXPORT_DIMENSION;
 		if (needsResize) {
 			const aspectRatio = exportWidth / exportHeight;
@@ -202,16 +204,15 @@ async function main() {
 				exportHeight = MAX_EXPORT_DIMENSION;
 				exportWidth = Math.round(MAX_EXPORT_DIMENSION * aspectRatio);
 			}
-			shader.canvas.width = exportWidth;
-			shader.canvas.height = exportHeight;
-			gl = shader.canvas.getContext('webgl') || shader.canvas.getContext('webgl2');
+			canvas.width = exportWidth;
+			canvas.height = exportHeight;
 			gl.viewport(0, 0, exportWidth, exportHeight);
 			shader.draw();
 		}
 		await shader.save(`Strange Camera - ${scenes[currentSceneIndex].name}`, window.location.href);
 		if (needsResize) {
-			shader.canvas.width = canvasWidth;
-			shader.canvas.height = canvasHeight;
+			canvas.width = canvasWidth;
+			canvas.height = canvasHeight;
 			gl.viewport(0, 0, canvasWidth, canvasHeight);
 		}
 		play();
@@ -381,9 +382,17 @@ async function main() {
 
 	function initializeScene(scene) {
 		cleanupScene?.();
-		scene.initialize(function setShader(newShader) {
-			shader = newShader;
-		});
+		scene.initialize(
+			function setShader(newShader) {
+				shader = newShader;
+				shader.onResize = (w, h) => {
+					canvas.width = w;
+					canvas.height = h;
+				};
+			},
+			canvas,
+			gl
+		);
 		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
 		const textureOptions = scene.history ? { history: scene.history } : undefined;
 		shader.initializeTexture('u_inputStream', videoInput, textureOptions);

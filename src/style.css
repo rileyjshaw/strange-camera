@@ -170,8 +170,16 @@ h1 {
 }
 
 canvas {
-	z-index: 1;
+	position: fixed;
+	inset: 0;
+	width: 100dvw;
+	height: 100dvh;
+	display: none;
 	background: var(--color-dark);
+}
+
+#app.ready canvas {
+	display: block;
 }
 
 .flipped canvas {

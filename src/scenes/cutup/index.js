@@ -3,6 +3,7 @@ import helpers from 'shaderpad/plugins/helpers';
 import save from 'shaderpad/plugins/save';
 
 import fragmentShaderSrc from './cutup.glsl';
+import { normalize, lerp } from '../util.js';
 
 const N_SHUFFLES_MIN = 1;
 const N_SHUFFLES_MAX = 10;
@@ -69,24 +70,20 @@ const getStepSize = (() => {
 	};
 })();
 
-function getInitialControlValue(min, max, initial) {
-	return (initial - min) / (max - min);
-}
-
 const uniformValues = {};
 export default {
 	name: 'Cutup',
 	hash: 'cutup',
 	controls: [['Number of shuffles'], ['Number of strips']],
 	controlValues: {
-		x1: getInitialControlValue(N_SHUFFLES_MIN, N_SHUFFLES_MAX, N_SHUFFLES_INITIAL),
-		y1: getInitialControlValue(N_STRIPS_MIN, N_STRIPS_MAX, N_STRIPS_INITIAL),
+		x1: normalize(N_SHUFFLES_MIN, N_SHUFFLES_MAX, N_SHUFFLES_INITIAL),
+		y1: normalize(N_STRIPS_MIN, N_STRIPS_MAX, N_STRIPS_INITIAL),
 	},
 	controlPrecision: {
 		x1: 0.002,
 	},
-	initialize(setShader) {
-		const shader = new ShaderPad(fragmentShaderSrc, { plugins: [helpers(), save()] });
+	initialize(setShader, canvas) {
+		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save()] });
 		uniformValues.u_nShuffles = N_SHUFFLES_INITIAL;
 		uniformValues.u_nStrips = N_STRIPS_INITIAL;
 		uniformValues.u_stepSize = getStepSize(N_SHUFFLES_INITIAL, N_STRIPS_INITIAL);
@@ -96,8 +93,8 @@ export default {
 		setShader(shader);
 	},
 	onUpdate({ x1, y1 }, shader) {
-		const nShuffles = Math.round(N_SHUFFLES_MIN + x1 * (N_SHUFFLES_MAX - N_SHUFFLES_MIN));
-		const nStrips = Math.round(N_STRIPS_MIN + y1 * (N_STRIPS_MAX - N_STRIPS_MIN));
+		const nShuffles = Math.round(lerp(N_SHUFFLES_MIN, N_SHUFFLES_MAX, x1));
+		const nStrips = Math.round(lerp(N_STRIPS_MIN, N_STRIPS_MAX, y1));
 		if (nShuffles === uniformValues.u_nShuffles && nStrips === uniformValues.u_nStrips) {
 			return;
 		}

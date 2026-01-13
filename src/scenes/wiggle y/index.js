@@ -14,8 +14,8 @@ export default {
 	controls: [['Number of rows'], ['Delay per row']],
 	controlValues: { x1: X1_INITIAL, y1: Y1_INITIAL },
 	history: 196,
-	initialize(setShader) {
-		const shader = new ShaderPad(fragmentShaderSrc, { plugins: [helpers(), save()] });
+	initialize(setShader, canvas) {
+		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save()] });
 		shader.initializeUniform('x1', 'float', X1_INITIAL);
 		shader.initializeUniform('y1', 'float', Y1_INITIAL);
 		setShader(shader);

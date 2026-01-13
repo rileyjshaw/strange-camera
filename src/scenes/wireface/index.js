@@ -5,6 +5,7 @@ import save from 'shaderpad/plugins/save';
 import { FaceLandmarker } from '@mediapipe/tasks-vision';
 
 import fragmentShaderSrc from './wireface.glsl';
+import { lerp } from '../util.js';
 
 const LINE_WIDTH_MIN = 0;
 const LINE_WIDTH_MAX = 6;
@@ -44,13 +45,14 @@ export default {
 		y1: HUE_ROTATION_INITIAL,
 		y2: BACKGROUND_COLOR_INITIAL,
 	},
-	initialize(setShader) {
+	initialize(setShader, canvas) {
 		currentLineWidth = LINE_WIDTH_INITIAL;
 		const lineCanvas = document.createElement('canvas');
 		lineCanvas.width = lineCanvas.height = 512;
 		const lineCtx = lineCanvas.getContext('2d');
 
 		const shader = new ShaderPad(fragmentShaderSrc, {
+			canvas,
 			plugins: [
 				helpers(),
 				save(),
@@ -76,7 +78,7 @@ export default {
 		setShader(shader);
 	},
 	onUpdate({ x1, y1, y2 }, shader) {
-		currentLineWidth = LINE_WIDTH_MIN + x1 * (LINE_WIDTH_MAX - LINE_WIDTH_MIN);
+		currentLineWidth = lerp(LINE_WIDTH_MIN, LINE_WIDTH_MAX, x1);
 		shader.updateUniforms({
 			u_hueRotation: y1,
 			u_backgroundColor: y2,

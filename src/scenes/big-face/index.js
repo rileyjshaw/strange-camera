@@ -4,6 +4,7 @@ import helpers from 'shaderpad/plugins/helpers';
 import save from 'shaderpad/plugins/save';
 
 import fragmentShaderSrc from './big-face.glsl';
+import { lerp } from '../util.js';
 
 const SCALE_MIN = 1;
 const SCALE_MAX = 6;
@@ -14,8 +15,9 @@ export default {
 	hash: 'big-face',
 	controls: [[], ['Scale']],
 	controlValues: { y1: (SCALE_INITIAL - SCALE_MIN) / (SCALE_MAX - SCALE_MIN) },
-	initialize(setShader) {
+	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
+			canvas,
 			plugins: [
 				helpers(),
 				save(),
@@ -29,7 +31,7 @@ export default {
 		setShader(shader);
 	},
 	onUpdate({ y1 }, shader) {
-		const scale = SCALE_MIN + y1 * (SCALE_MAX - SCALE_MIN);
+		const scale = lerp(SCALE_MIN, SCALE_MAX, y1);
 		shader.updateUniforms({ u_scale: scale });
 	},
 };

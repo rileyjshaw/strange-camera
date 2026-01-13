@@ -13,8 +13,9 @@ export default {
 	hash: 'sunday',
 	controls: [['Glow'], ['Color']],
 	controlValues: { x1: GLOW_AMOUNT_INITIAL, y1: COLOR_VALUE_INITIAL },
-	initialize(setShader) {
+	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
+			canvas,
 			plugins: [
 				helpers(),
 				save(),
