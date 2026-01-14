@@ -15,6 +15,6 @@
 	},
 	"dependencies": {
 		"@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
-		"shaderpad": "^1.0.0-beta.38"
+		"shaderpad": "^1.0.0-beta.39"
 	}
 }
