@@ -132,6 +132,13 @@ h1 {
 	align-items: center;
 	justify-content: center;
 }
+.control-button img {
+	opacity: 0.9;
+	transition: opacity 0.2s ease;
+}
+.control-button:hover img {
+	opacity: 1;
+}
 
 #shutter {
 	height: 68px;
