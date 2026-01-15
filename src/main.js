@@ -190,6 +190,8 @@ async function main() {
 	document.body.addEventListener('drop', handleImageDrop);
 
 	async function exportHighRes() {
+		const sceneName = scenes[currentSceneIndex].name;
+		window.posthog?.capture('take_photo', { scene: sceneName });
 		shader.pause();
 		const { width: canvasWidth, height: canvasHeight } = canvas;
 		let exportWidth = canvasWidth,
@@ -209,7 +211,7 @@ async function main() {
 			gl.viewport(0, 0, exportWidth, exportHeight);
 			shader.draw();
 		}
-		await shader.save(`Strange Camera - ${scenes[currentSceneIndex].name}`, window.location.href);
+		await shader.save(`Strange Camera - ${sceneName}`, window.location.href);
 		if (needsResize) {
 			canvas.width = canvasWidth;
 			canvas.height = canvasHeight;
