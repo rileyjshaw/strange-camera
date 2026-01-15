@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <rect id="Artboard3" x="0" y="0" width="1024" height="1024" style="fill:none;"/>
+    <circle id="Pupil" cx="512" cy="512" r="448" style="fill:rgb(187,255,53);"/>
+    <g id="Pupil-lines" serif:id="Pupil lines">
+        <path d="M415.994,531.097L64,512L415.994,492.903L98.102,340.558L430.61,457.617L195.216,195.216L457.617,430.61L340.558,98.102L492.903,415.994L512,64L531.097,415.994L683.442,98.102L566.383,430.61L828.784,195.216L593.39,457.617L925.898,340.558L608.006,492.903L960,512L608.006,531.097L925.898,683.442L593.39,566.383L828.784,828.784L566.383,593.39L683.442,925.898L531.097,608.006L512,960L492.903,608.006L340.558,925.898L457.617,593.39L195.216,828.784L430.61,566.383L98.102,683.442L415.994,531.097Z" style="fill:rgb(40,220,42);"/>
+    </g>
+    <circle id="Pupil1" serif:id="Pupil" cx="512" cy="512" r="298.667" style="fill:rgb(40,220,42);"/>
+    <circle id="Pupil2" serif:id="Pupil" cx="512" cy="512" r="149.333"/>
+    <g id="Reflections">
+        <circle cx="344" cy="642.667" r="18.667" style="fill:white;"/>
+        <circle cx="381.333" cy="680" r="18.667" style="fill:white;"/>
+        <circle cx="680" cy="344" r="37.333" style="fill:white;"/>
+    </g>
+</svg>
