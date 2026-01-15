@@ -133,6 +133,7 @@ h1 {
 	justify-content: center;
 }
 .control-button img {
+	width: 100%;
 	opacity: 0.9;
 	transition: opacity 0.2s ease;
 }
