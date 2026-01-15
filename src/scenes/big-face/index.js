@@ -9,12 +9,13 @@ import { lerp } from '../util.js';
 const SCALE_MIN = 1;
 const SCALE_MAX = 6;
 const SCALE_INITIAL = 3;
+const RATIO_INITIAL = 0.5;
 
 export default {
 	name: 'Big Face',
 	hash: 'big-face',
-	controls: [[], ['Scale']],
-	controlValues: { y1: (SCALE_INITIAL - SCALE_MIN) / (SCALE_MAX - SCALE_MIN) },
+	controls: [['Ratio'], ['Scale']],
+	controlValues: { x1: RATIO_INITIAL, y1: (SCALE_INITIAL - SCALE_MIN) / (SCALE_MAX - SCALE_MIN) },
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,
@@ -28,10 +29,11 @@ export default {
 			],
 		});
 		shader.initializeUniform('u_scale', 'float', SCALE_INITIAL);
+		shader.initializeUniform('u_ratio', 'float', RATIO_INITIAL);
 		setShader(shader);
 	},
-	onUpdate({ y1 }, shader) {
+	onUpdate({ x1, y1 }, shader) {
 		const scale = lerp(SCALE_MIN, SCALE_MAX, y1);
-		shader.updateUniforms({ u_scale: scale });
+		shader.updateUniforms({ u_ratio: x1, u_scale: scale });
 	},
 };
