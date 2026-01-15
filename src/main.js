@@ -307,10 +307,10 @@ async function main() {
 	}
 
 	let cleanupScene;
-	function switchToScene(index) {
+	function switchToScene(index, skipHashUpdate) {
 		currentSceneIndex = index;
 		cleanupScene = initializeScene(scenes[currentSceneIndex]);
-		updateUrlHash(scenes[currentSceneIndex]);
+		if (!skipHashUpdate) updateUrlHash(scenes[currentSceneIndex]);
 	}
 
 	handleTouch(
@@ -378,7 +378,7 @@ async function main() {
 		{ passive: false }
 	);
 
-	switchToScene(currentSceneIndex);
+	switchToScene(currentSceneIndex, true);
 
 	function initializeScene(scene) {
 		cleanupScene?.();
