@@ -387,10 +387,10 @@ async function main() {
 		scene.initialize(
 			function setShader(newShader) {
 				shader = newShader;
-				shader.onResize = (w, h) => {
+				shader.on('resize', (w, h) => {
 					canvas.width = w;
 					canvas.height = h;
-				};
+				});
 			},
 			canvas,
 			gl
