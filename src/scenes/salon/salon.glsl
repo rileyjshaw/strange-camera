@@ -19,9 +19,9 @@ void main() {
 	vec3 color = texture(u_inputStream, uv).rgb;
 
 	vec2 segment = segmentAt(uv);
-	if (segment.x > 0.0 && segment.y > 0.1) {
-		vec3 hairColor = hsv2rgb(vec3(u_hue, 0.8, u_brightness));
-		color = mix(color, hairColor, segment.y * 0.9);
+	if (segment.x > 0.0) {
+		vec3 hairColor = hsv2rgb(vec3(u_hue, 1.0 - abs(u_brightness - 0.5) * 2.0, u_brightness));
+		color = mix(color, hairColor * ((u_brightness - 0.5) * 2.0 + 1.0), segment.y * ((1.0 - u_brightness) * 0.3 + 0.1));
 	}
 
 	outColor = vec4(color, 1.0);
