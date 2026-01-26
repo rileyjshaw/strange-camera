@@ -6,6 +6,7 @@ import cutup from './cutup';
 import faceCamo from './face-camo';
 import fishbowl from './fishbowl';
 import lightTrails from './light-trails';
+import pixelface from './pixelface';
 import salon from './salon';
 import sunday from './sunday';
 import wiggleX from './wiggle x';
@@ -21,6 +22,7 @@ const scenes = [
 	faceCamo,
 	fishbowl,
 	lightTrails,
+	pixelface,
 	salon,
 	sunday,
 	wiggleX,
