@@ -42,6 +42,16 @@ function attachControls(scene, handleMove) {
 
 	const precisionDefaults = generatePrecisionDefaults(scene.controls);
 	const precision = Object.assign({}, precisionDefaults, precisionOverrides);
+	const controlModifiers = scene.controlModifiers ?? {};
+
+	function computeValue(currentValues, key, diff) {
+		const newValue = currentValues[key] + diff * precision[key];
+		if (controlModifiers[key]?.loop) {
+			return (1 + newValue) % 1;
+		}
+		return Math.max(0, Math.min(1, newValue));
+	}
+
 	const touchCleanup = handleTouch(document.body, {
 		onMove(direction, diff, nTouches, initialX, initialY) {
 			if (nTouches > 1) return;
@@ -57,7 +67,7 @@ function attachControls(scene, handleMove) {
 					group = 1 + Math.floor((initialX * yControlsLength) / width);
 				}
 				const key = `${direction}${group}`;
-				return { [key]: Math.max(0, Math.min(1, currentValues[key] + diff * precision[key])) };
+				return { [key]: computeValue(currentValues, key, diff) };
 			});
 		},
 	});
@@ -84,7 +94,7 @@ function attachControls(scene, handleMove) {
 				if (width > height) direction = direction === 'x' ? 'y' : 'x';
 				const key = `${direction}${keyboardControlGroup}`;
 				handleMove(currentValues => {
-					return { [key]: Math.max(0, Math.min(1, currentValues[key] + diff * precision[key])) };
+					return { [key]: computeValue(currentValues, key, diff) };
 				});
 				break;
 		}

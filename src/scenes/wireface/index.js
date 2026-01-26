@@ -61,6 +61,14 @@ export default {
 		y2: DOT_HUE_ROTATION_INITIAL,
 		y3: BACKGROUND_COLOR_INITIAL,
 	},
+	controlModifiers: {
+		y1: {
+			loop: true,
+		},
+		y2: {
+			loop: true,
+		},
+	},
 	initialize(setShader, canvas) {
 		currentLineWidth = LINE_WIDTH_INITIAL;
 		currentDotSize = DOT_SIZE_INITIAL;

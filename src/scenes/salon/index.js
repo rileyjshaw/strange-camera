@@ -16,6 +16,11 @@ export default {
 		x1: HUE_INITIAL,
 		y1: BRIGHTNESS_INITIAL,
 	},
+	controlModifiers: {
+		x1: {
+			loop: true,
+		},
+	},
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,
