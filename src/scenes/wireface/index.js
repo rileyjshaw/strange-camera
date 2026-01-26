@@ -7,15 +7,15 @@ import { FaceLandmarker } from '@mediapipe/tasks-vision';
 import fragmentShaderSrc from './wireface.glsl';
 import { lerp } from '../util.js';
 
+const LINE_HUE_ROTATION_INITIAL = 0.78;
+const DOT_HUE_ROTATION_INITIAL = 0.2;
+const BACKGROUND_COLOR_INITIAL = 0.1;
 const LINE_WIDTH_MIN = 0;
 const LINE_WIDTH_MAX = 6;
 const LINE_WIDTH_INITIAL = 2;
-const LINE_HUE_ROTATION_INITIAL = 0.78;
-const DOT_HUE_ROTATION_INITIAL = 0.2;
 const DOT_SIZE_MIN = 0;
 const DOT_SIZE_MAX = 6;
 const DOT_SIZE_INITIAL = 2;
-const BACKGROUND_COLOR_INITIAL = 0.1;
 let currentLineWidth = LINE_WIDTH_INITIAL;
 let currentDotSize = DOT_SIZE_INITIAL;
 
@@ -51,21 +51,21 @@ export default {
 	name: 'Wireface',
 	hash: 'wireface',
 	controls: [
-		['Line width', 'Dot size'],
 		['Line color', 'Dot color', 'Background color'],
+		['Line width', 'Dot size'],
 	],
 	controlValues: {
-		x1: (LINE_WIDTH_INITIAL - LINE_WIDTH_MIN) / (LINE_WIDTH_MAX - LINE_WIDTH_MIN),
-		x2: (DOT_SIZE_INITIAL - DOT_SIZE_MIN) / (DOT_SIZE_MAX - DOT_SIZE_MIN),
-		y1: LINE_HUE_ROTATION_INITIAL,
-		y2: DOT_HUE_ROTATION_INITIAL,
-		y3: BACKGROUND_COLOR_INITIAL,
+		x1: LINE_HUE_ROTATION_INITIAL,
+		x2: DOT_HUE_ROTATION_INITIAL,
+		x3: BACKGROUND_COLOR_INITIAL,
+		y1: (LINE_WIDTH_INITIAL - LINE_WIDTH_MIN) / (LINE_WIDTH_MAX - LINE_WIDTH_MIN),
+		y2: (DOT_SIZE_INITIAL - DOT_SIZE_MIN) / (DOT_SIZE_MAX - DOT_SIZE_MIN),
 	},
 	controlModifiers: {
-		y1: {
+		x1: {
 			loop: true,
 		},
-		y2: {
+		x2: {
 			loop: true,
 		},
 	},
@@ -96,20 +96,20 @@ export default {
 				shader.updateTextures({ u_faceMesh: lineCanvas });
 			}
 		});
-		shader.initializeUniform('u_hueRotation', 'float', LINE_HUE_ROTATION_INITIAL);
-		shader.initializeUniform('u_dotHueRotation', 'float', DOT_HUE_ROTATION_INITIAL);
 		shader.initializeUniform('u_backgroundColor', 'float', BACKGROUND_COLOR_INITIAL);
+		shader.initializeUniform('u_lineHueRotation', 'float', LINE_HUE_ROTATION_INITIAL);
+		shader.initializeUniform('u_dotHueRotation', 'float', DOT_HUE_ROTATION_INITIAL);
 		shader.initializeTexture('u_faceMesh', lineCanvas);
 
 		setShader(shader);
 	},
-	onUpdate({ x1, x2, y1, y2, y3 }, shader) {
-		currentLineWidth = lerp(LINE_WIDTH_MIN, LINE_WIDTH_MAX, x1);
-		currentDotSize = lerp(DOT_SIZE_MIN, DOT_SIZE_MAX, x2);
+	onUpdate({ x1, x2, x3, y1, y2 }, shader) {
+		currentLineWidth = lerp(LINE_WIDTH_MIN, LINE_WIDTH_MAX, y1);
+		currentDotSize = lerp(DOT_SIZE_MIN, DOT_SIZE_MAX, y2);
 		shader.updateUniforms({
-			u_hueRotation: y1,
-			u_dotHueRotation: y2,
-			u_backgroundColor: y3,
+			u_lineHueRotation: x1,
+			u_dotHueRotation: x2,
+			u_backgroundColor: x3,
 		});
 	},
 };

@@ -125,9 +125,13 @@ h1 {
 		rgba(231, 229, 228, 0.4),
 		var(--color-light)
 	);
-	box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.6), inset -2px -2px 4px rgba(0, 0, 0, 0.1),
+	box-shadow:
+		inset 2px 2px 4px rgba(255, 255, 255, 0.6),
+		inset -2px -2px 4px rgba(0, 0, 0, 0.1),
 		2px 2px 4px rgba(0, 0, 0, 0.1);
-	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	transition:
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -159,7 +163,9 @@ h1 {
 		rgba(231, 229, 228, 0.5),
 		var(--color-light)
 	);
-	box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.7), inset -2px -2px 4px rgba(0, 0, 0, 0.08),
+	box-shadow:
+		inset 2px 2px 4px rgba(255, 255, 255, 0.7),
+		inset -2px -2px 4px rgba(0, 0, 0, 0.08),
 		3px 3px 6px rgba(0, 0, 0, 0.12);
 	transform: scale(1.04);
 }
@@ -171,10 +177,14 @@ h1 {
 		rgba(200, 198, 197, 0.6),
 		var(--color-light)
 	);
-	box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.2), inset -1px -1px 2px rgba(255, 255, 255, 0.3),
+	box-shadow:
+		inset 3px 3px 6px rgba(0, 0, 0, 0.2),
+		inset -1px -1px 2px rgba(255, 255, 255, 0.3),
 		1px 1px 2px rgba(0, 0, 0, 0.1);
 	transform: scale(0.88);
-	transition: transform 0.1s ease, box-shadow 0.1s ease;
+	transition:
+		transform 0.1s ease,
+		box-shadow 0.1s ease;
 }
 
 canvas {
@@ -344,6 +354,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 		border-radius: 6px;
 		& > div {
 			inline-size: calc(100% - 30px);
+			block-size: 24px;
 			position: relative;
 			counter-increment: item;
 			border-inline: 2px solid currentColor;
@@ -360,7 +371,10 @@ body:is(.settings-open, .controls-hidden) #controls {
 			}
 			&::after {
 				content: counter(item);
-				position: relative;
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
 				display: inline-grid;
 				width: 2em;
 				height: 2em;

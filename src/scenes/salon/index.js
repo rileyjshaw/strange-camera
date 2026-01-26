@@ -16,6 +16,10 @@ export default {
 		x1: HUE_INITIAL,
 		y1: BRIGHTNESS_INITIAL,
 	},
+	controlPrecision: {
+		x1: 0.001,
+		y1: 0.0015,
+	},
 	controlModifiers: {
 		x1: {
 			loop: true,

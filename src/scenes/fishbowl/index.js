@@ -3,7 +3,7 @@ import save from 'shaderpad/plugins/save';
 
 import fragmentShaderSrc from './fishbowl.glsl';
 
-const SHADOW_INITIAL = 0.25;
+const SHADOW_INITIAL = 0.33;
 
 export default {
 	name: 'Fishbowl',

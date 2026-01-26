@@ -12,7 +12,7 @@ out vec4 outColor;
 uniform sampler2D u_inputStream;
 uniform sampler2D u_faceMesh;
 uniform float u_backgroundColor;
-uniform float u_hueRotation;
+uniform float u_lineHueRotation;
 uniform float u_dotHueRotation;
 
 vec3 hueToRgb(float h) {
@@ -45,7 +45,7 @@ void main() {
 	float lineMask = texture(u_faceMesh, uv).r;
 	float dotMask = texture(u_faceMesh, uv).g;
 
-	color = mix(color, hueToRgb(u_hueRotation), lineMask);
+	color = mix(color, hueToRgb(u_lineHueRotation), lineMask);
 	color = mix(color, hueToRgb(u_dotHueRotation), dotMask);
 
 	outColor = vec4(color, 1.0);
