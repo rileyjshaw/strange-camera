@@ -1,12 +1,11 @@
 import handleTouch from './handleTouch';
 
-const precisionDefaults = {
-	x1: 0.003,
-	x2: 0.003,
-	x3: 0.003,
-	y1: 0.001,
-	y2: 0.001,
-};
+function generatePrecisionDefaults(controls) {
+	return Object.fromEntries([
+		...(controls[0]?.map((_, i) => [`x${i + 1}`, 0.003]) ?? []),
+		...(controls[1]?.map((_, i) => [`y${i + 1}`, 0.001]) ?? []),
+	]);
+}
 
 let width = 0;
 let height = 0;
@@ -41,6 +40,7 @@ function attachControls(scene, handleMove) {
 		});
 	});
 
+	const precisionDefaults = generatePrecisionDefaults(scene.controls);
 	const precision = Object.assign({}, precisionDefaults, precisionOverrides);
 	const touchCleanup = handleTouch(document.body, {
 		onMove(direction, diff, nTouches, initialX, initialY) {
