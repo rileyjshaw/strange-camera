@@ -324,9 +324,10 @@ async function main() {
 				switchToScene(newIndex);
 			},
 		},
-		{ once: true, moveThresholdPx: 100 },
+		{ once: true, moveThresholdPx: 100 }
 	);
 	document.addEventListener('keydown', e => {
+		if (e.repeat) return;
 		switch (e.key) {
 			case 'Escape':
 				toggleSettings();
@@ -377,7 +378,7 @@ async function main() {
 		e => {
 			if (e.touches.length === 2) e.preventDefault();
 		},
-		{ passive: false },
+		{ passive: false }
 	);
 
 	switchToScene(currentSceneIndex, true);
@@ -389,7 +390,7 @@ async function main() {
 				shader = newShader;
 			},
 			canvas,
-			gl,
+			gl
 		);
 		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
 		const textureOptions = scene.history ? { history: scene.history } : undefined;
