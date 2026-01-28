@@ -9,7 +9,6 @@ function generatePrecisionDefaults(controls) {
 
 let width = 0;
 let height = 0;
-
 function updateDimensions() {
 	width = window.visualViewport.width;
 	height = window.visualViewport.height;

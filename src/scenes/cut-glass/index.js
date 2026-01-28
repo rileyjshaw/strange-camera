@@ -1,6 +1,7 @@
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
 import save from 'shaderpad/plugins/save';
+import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './cut-glass.glsl';
 import { normalize, lerp } from '../util.js';
@@ -24,7 +25,7 @@ export default {
 		x1: 0.01,
 	},
 	initialize(setShader, canvas) {
-		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save()] });
+		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save(), autosize()] });
 		shader.initializeUniform('u_refractionIntensity', 'float', REFRACTION_INTENSITY_INITIAL);
 		shader.initializeUniform('u_nStrips', 'float', N_STRIPS_INITIAL);
 		setShader(shader);

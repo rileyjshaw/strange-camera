@@ -1,6 +1,7 @@
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
 import save from 'shaderpad/plugins/save';
+import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './light-trails.glsl';
 import { normalize } from '../util.js';
@@ -19,7 +20,7 @@ export default {
 	initialize(setShader, canvas, gl) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,
-			plugins: [helpers(), save()],
+			plugins: [helpers(), save(), autosize()],
 			history: 1,
 			internalFormat: gl.RGBA16F,
 			type: gl.HALF_FLOAT,

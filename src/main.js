@@ -193,7 +193,7 @@ async function main() {
 		const sceneName = scenes[currentSceneIndex].name;
 		window.posthog?.capture('take_photo', { scene: sceneName });
 		shader.pause();
-		const { width: canvasWidth, height: canvasHeight } = canvas;
+		const { width: canvasWidth, height: canvasHeight } = shader.canvas;
 		let exportWidth = canvasWidth,
 			exportHeight = canvasHeight;
 		const needsResize = exportWidth > MAX_EXPORT_DIMENSION || exportHeight > MAX_EXPORT_DIMENSION;
@@ -206,15 +206,15 @@ async function main() {
 				exportHeight = MAX_EXPORT_DIMENSION;
 				exportWidth = Math.round(MAX_EXPORT_DIMENSION * aspectRatio);
 			}
-			canvas.width = exportWidth;
-			canvas.height = exportHeight;
+			shader.canvas.width = exportWidth;
+			shader.canvas.height = exportHeight;
 			gl.viewport(0, 0, exportWidth, exportHeight);
 			shader.draw();
 		}
 		await shader.save(`Strange Camera - ${sceneName}`, window.location.href);
 		if (needsResize) {
-			canvas.width = canvasWidth;
-			canvas.height = canvasHeight;
+			shader.canvas.width = canvasWidth;
+			shader.canvas.height = canvasHeight;
 			gl.viewport(0, 0, canvasWidth, canvasHeight);
 		}
 		play();
@@ -324,7 +324,7 @@ async function main() {
 				switchToScene(newIndex);
 			},
 		},
-		{ once: true, moveThresholdPx: 100 }
+		{ once: true, moveThresholdPx: 100 },
 	);
 	document.addEventListener('keydown', e => {
 		switch (e.key) {
@@ -377,7 +377,7 @@ async function main() {
 		e => {
 			if (e.touches.length === 2) e.preventDefault();
 		},
-		{ passive: false }
+		{ passive: false },
 	);
 
 	switchToScene(currentSceneIndex, true);
@@ -387,13 +387,9 @@ async function main() {
 		scene.initialize(
 			function setShader(newShader) {
 				shader = newShader;
-				shader.on('resize', (w, h) => {
-					canvas.width = w;
-					canvas.height = h;
-				});
 			},
 			canvas,
-			gl
+			gl,
 		);
 		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
 		const textureOptions = scene.history ? { history: scene.history } : undefined;

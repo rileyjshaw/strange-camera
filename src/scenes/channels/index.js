@@ -1,6 +1,7 @@
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
 import save from 'shaderpad/plugins/save';
+import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './channels.glsl';
 import { lerp } from '../util.js';
@@ -25,7 +26,7 @@ export default {
 	controlValues: { x1: 0 },
 	history: maxFrameDelay,
 	initialize(setShader, canvas) {
-		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save()] });
+		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save(), autosize()] });
 		shader.initializeUniform('u_nEchoes', 'int', N_ECHOES_INITIAL);
 		shader.initializeUniform('u_frameDelayPerEcho', 'int', FRAME_DELAY_PER_ECHO_INITIAL);
 		shader.initializeUniform('u_dimmingFactor', 'float', getDimmingFactor(N_ECHOES_INITIAL));
