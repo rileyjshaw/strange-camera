@@ -22,8 +22,8 @@ export default {
 			canvas,
 			plugins: [helpers(), save(), autosize()],
 			history: 1,
-			internalFormat: gl.RGBA16F,
-			type: gl.HALF_FLOAT,
+			internalFormat: 'RGBA16F',
+			type: 'HALF_FLOAT',
 		});
 		shader.initializeUniform('u_colorBleedControl', 'float', COLOR_BLEED_INITIAL);
 		shader.initializeUniform('u_fadeControl', 'float', FADE_INITIAL);
