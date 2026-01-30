@@ -40,8 +40,6 @@ export default function handleTouch(
 	}
 
 	function handleTouchMove(e) {
-		e.preventDefault();
-
 		if (latestTouch.id === null) return;
 
 		const touch = Array.from(e.changedTouches).find(touch => touch.identifier === latestTouch.id);

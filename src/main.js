@@ -315,17 +315,6 @@ async function main() {
 		if (!skipHashUpdate) updateUrlHash(scenes[currentSceneIndex]);
 	}
 
-	handleTouch(
-		document.getElementById('settings'),
-		{
-			onMove(direction, diff) {
-				if (direction === 'y') return;
-				const newIndex = (currentSceneIndex - Math.sign(diff) + scenes.length) % scenes.length;
-				switchToScene(newIndex);
-			},
-		},
-		{ once: true, moveThresholdPx: 100 }
-	);
 	document.addEventListener('keydown', e => {
 		if (e.repeat) return;
 		switch (e.key) {
