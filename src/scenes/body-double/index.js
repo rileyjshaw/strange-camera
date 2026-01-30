@@ -1,5 +1,5 @@
 import ShaderPad from 'shaderpad';
-import pose from 'shaderpad/plugins/pose';
+import segmenter from 'shaderpad/plugins/segmenter';
 import helpers from 'shaderpad/plugins/helpers';
 import save from 'shaderpad/plugins/save';
 import autosize from 'shaderpad/plugins/autosize';
@@ -9,7 +9,7 @@ import { normalize, lerp } from '../util.js';
 
 const HISTORY_SIZE = 196;
 const N_ECHOES_MIN = 1;
-const N_ECHOES_MAX = HISTORY_SIZE / 8;
+const N_ECHOES_MAX = Math.floor(HISTORY_SIZE / 8);
 const N_ECHOES_INITIAL = 5;
 
 export default {
@@ -28,9 +28,9 @@ export default {
 				helpers(),
 				save(),
 				autosize(),
-				pose({
+				segmenter({
 					textureName: 'u_inputStream',
-					options: { maxPoses: 1, history: HISTORY_SIZE },
+					options: { history: HISTORY_SIZE },
 				}),
 			],
 		});
@@ -38,8 +38,8 @@ export default {
 		shader.initializeUniform('y1', 'float', 0.5);
 		setShader(shader);
 	},
-	onUpdate(userControls, shader) {
-		const nEchoes = Math.round(lerp(N_ECHOES_MIN, N_ECHOES_MAX, userControls.x1));
-		shader.updateUniforms({ u_nEchoes: nEchoes, y1: userControls.y1 });
+	onUpdate({ x1, y1 }, shader) {
+		const nEchoes = Math.round(lerp(N_ECHOES_MIN, N_ECHOES_MAX, x1));
+		shader.updateUniforms({ u_nEchoes: nEchoes, y1 });
 	},
 };
