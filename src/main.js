@@ -6,7 +6,8 @@ function updateUrlHash(scene) {
 	window.location.hash = scene.hash;
 }
 
-const urlHash = window.location.hash.slice(1);
+let urlHash = window.location.hash.slice(1);
+if (urlHash === 'surprise') urlHash = scenes[Math.floor(Math.random() * scenes.length)].hash;
 let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? sceneHashToIndex.get('big-face');
 
 const MAX_EXPORT_DIMENSION = 4096;
