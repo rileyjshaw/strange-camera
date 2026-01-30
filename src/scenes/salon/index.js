@@ -35,6 +35,11 @@ export default {
 				autosize(),
 				segmenter({
 					textureName: 'u_inputStream',
+					options: {
+						modelPath:
+							'https://storage.googleapis.com/mediapipe-models/image_segmenter/hair_segmenter/float32/latest/hair_segmenter.tflite',
+						outputConfidenceMasks: true,
+					},
 				}),
 			],
 		});
