@@ -21,7 +21,6 @@ const titleEl = document.getElementById('title');
 const controlsXContainer = document.getElementById('controls-x');
 const controlsYContainer = document.getElementById('controls-y');
 const controlsListMove = document.getElementById('controls-list-move');
-const controlsListTap = document.getElementById('controls-list-tap');
 
 function attachControls(scene, handleMove) {
 	const [xControlsLength, yControlsLength] = scene.controls.map(arr => arr.length);
@@ -107,7 +106,7 @@ function attachControls(scene, handleMove) {
 		touchCleanup();
 		document.removeEventListener('keydown', keyboardHandler);
 		titleEl.textContent = '';
-		[controlsXContainer, controlsYContainer, controlsListMove, controlsListTap].forEach(container => {
+		[controlsXContainer, controlsYContainer, controlsListMove].forEach(container => {
 			while (container.firstChild) {
 				container.removeChild(container.firstChild);
 			}
