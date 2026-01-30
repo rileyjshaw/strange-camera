@@ -1,5 +1,6 @@
 import bigFace from './big-face';
 import bodyCamo from './body-camo';
+import bodyDouble from './body-double';
 import channels from './channels';
 import cutGlass from './cut-glass';
 import cutup from './cutup';
@@ -8,6 +9,7 @@ import fishbowl from './fishbowl';
 import lightTrails from './light-trails';
 import pixelface from './pixelface';
 import salon from './salon';
+import slow from './slow';
 import sunday from './sunday';
 import wiggleX from './wiggle x';
 import wiggleY from './wiggle y';
@@ -16,6 +18,7 @@ import wireface from './wireface';
 const scenes = [
 	bigFace,
 	bodyCamo,
+	bodyDouble,
 	channels,
 	cutGlass,
 	cutup,
@@ -24,6 +27,7 @@ const scenes = [
 	lightTrails,
 	pixelface,
 	salon,
+	slow,
 	sunday,
 	wiggleX,
 	wiggleY,
