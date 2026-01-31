@@ -21,6 +21,6 @@ void main() {
 		int delay = i * delayPerEcho;
 		float z = historyZ(u_inputStream, u_inputStreamFrameOffset, delay);
 		vec2 segment = segmentAt(uv, delay);
-		outColor = mix(outColor, texture(u_inputStream, vec3(uv, z)), (1.0 - segment.x) * segment.y);
+		outColor = mix(outColor, texture(u_inputStream, vec3(uv, z)), (1.0 - segment.y) * segment.x);
 	}
 }
