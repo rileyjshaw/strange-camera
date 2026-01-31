@@ -22,6 +22,7 @@ export default {
 		x2: PIXEL_SIZE_INITIAL,
 		y1: MODE_INITIAL,
 	},
+	pluginReadyEvents: ['face:ready'],
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,

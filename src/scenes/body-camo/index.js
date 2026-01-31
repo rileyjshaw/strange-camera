@@ -16,6 +16,7 @@ export default {
 	hash: 'body-camo',
 	controls: [[], ['Offset pixels']],
 	controlValues: { y1: OFFSET_PIXELS_INITIAL / OFFSET_PIXELS_MAX },
+	pluginReadyEvents: ['pose:ready'],
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,

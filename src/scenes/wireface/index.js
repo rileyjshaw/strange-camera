@@ -70,6 +70,7 @@ export default {
 			loop: true,
 		},
 	},
+	pluginReadyEvents: ['face:ready'],
 	initialize(setShader, canvas) {
 		currentLineWidth = LINE_WIDTH_INITIAL;
 		currentDotSize = DOT_SIZE_INITIAL;

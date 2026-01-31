@@ -17,6 +17,7 @@ export default {
 	hash: 'big-face',
 	controls: [['Ratio'], ['Scale']],
 	controlValues: { x1: RATIO_INITIAL, y1: (SCALE_INITIAL - SCALE_MIN) / (SCALE_MAX - SCALE_MIN) },
+	pluginReadyEvents: ['face:ready'],
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,

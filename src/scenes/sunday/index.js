@@ -17,6 +17,7 @@ export default {
 	controlPrecision: {
 		y1: 0.002,
 	},
+	pluginReadyEvents: ['face:ready'],
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,

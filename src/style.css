@@ -236,6 +236,34 @@ body.settings-open #settings.populated {
 	opacity: 0.8;
 }
 
+#settings.scene-loading .visual-controls,
+#settings.scene-loading .controls-list {
+	display: none;
+}
+
+.loading-indicator {
+	display: none;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1rem;
+	padding: 2rem;
+	font-family: 'Cartograph CF', monospace;
+}
+
+#settings.scene-loading .loading-indicator {
+	display: flex;
+}
+
+.loading-spinner {
+	width: 2rem;
+	height: 2rem;
+	border: 3px solid rgba(0, 0, 0, 0.1);
+	border-top-color: currentColor;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
 body:is(.settings-open, .controls-hidden) #controls {
 	display: none;
 }
@@ -444,4 +472,10 @@ a,
 	-webkit-tap-highlight-color: transparent !important;
 	-webkit-appearance: none !important;
 	appearance: none !important;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
 }

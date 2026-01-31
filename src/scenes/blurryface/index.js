@@ -27,6 +27,7 @@ export default {
 		x1: (BLUR_RADIUS_INITIAL - BLUR_RADIUS_MIN) / (BLUR_RADIUS_MAX - BLUR_RADIUS_MIN),
 		y1: MODE_INITIAL,
 	},
+	pluginReadyEvents: ['segmenter:ready'],
 	initialize(setShader, canvas) {
 		const w = canvas.width;
 		const h = canvas.height;

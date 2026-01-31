@@ -21,6 +21,7 @@ export default {
 		y1: 0.5,
 	},
 	history: HISTORY_SIZE,
+	pluginReadyEvents: ['segmenter:ready'],
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,

@@ -75,6 +75,8 @@ async function main() {
 	let play;
 
 	const app = document.getElementById('app');
+	const settingsEl = document.getElementById('settings');
+	const titleEl = document.getElementById('title');
 	const canvas = document.querySelector('canvas');
 	const gl = canvas.getContext('webgl2', { antialias: false });
 
@@ -311,7 +313,61 @@ async function main() {
 	let cleanupScene;
 	function switchToScene(index, skipHashUpdate) {
 		currentSceneIndex = index;
-		cleanupScene = initializeScene(scenes[currentSceneIndex]);
+		const scene = scenes[currentSceneIndex];
+		const loadingSceneIndex = currentSceneIndex;
+		cleanupScene?.();
+		settingsEl.classList.add('scene-loading', 'populated');
+		titleEl.textContent = scene.name;
+		titleEl.setAttribute('data-text', scene.name);
+
+		let sceneReadyPromise;
+		function wrappedSetShader(newShader) {
+			shader = newShader;
+			cleanupScene = () => {
+				settingsEl.classList.remove('scene-loading');
+				shader?.destroy();
+			};
+			const events = scene.pluginReadyEvents ?? [];
+			if (events.length === 0) {
+				sceneReadyPromise = Promise.resolve();
+			} else {
+				let count = 0;
+				sceneReadyPromise = new Promise(resolve => {
+					const check = () => {
+						count++;
+						if (count >= events.length) resolve();
+					};
+					for (const e of events) shader.on(e, check);
+				});
+			}
+		}
+
+		scene.initialize(wrappedSetShader, canvas, gl);
+		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
+		const textureOptions = scene.history ? { history: scene.history } : undefined;
+		shader.initializeTexture('u_inputStream', videoInput, textureOptions);
+		play = function play() {
+			shader.play(() => {
+				shader.updateTextures({ u_inputStream: videoInput });
+			});
+		};
+		play();
+
+		sceneReadyPromise.then(() => {
+			if (loadingSceneIndex !== currentSceneIndex) return;
+			settingsEl.classList.remove('scene-loading');
+			const cleanupControls = attachControls(scene, getUpdates => {
+				if (isSettingsOpen) return;
+				const updates = getUpdates(userControls);
+				Object.assign(userControls, updates);
+				scene.onUpdate?.(userControls, shader);
+			});
+			cleanupScene = () => {
+				cleanupControls();
+				shader.destroy();
+			};
+		});
+
 		if (!skipHashUpdate) updateUrlHash(scenes[currentSceneIndex]);
 	}
 
@@ -371,37 +427,6 @@ async function main() {
 	);
 
 	switchToScene(currentSceneIndex, true);
-
-	function initializeScene(scene) {
-		cleanupScene?.();
-		scene.initialize(
-			function setShader(newShader) {
-				shader = newShader;
-			},
-			canvas,
-			gl
-		);
-		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
-		const textureOptions = scene.history ? { history: scene.history } : undefined;
-		shader.initializeTexture('u_inputStream', videoInput, textureOptions);
-		play = function play() {
-			shader.play(() => {
-				shader.updateTextures({ u_inputStream: videoInput });
-			});
-		};
-		play();
-
-		const cleanupControls = attachControls(scene, getUpdates => {
-			if (isSettingsOpen) return;
-			const updates = getUpdates(userControls);
-			Object.assign(userControls, updates);
-			scene.onUpdate?.(userControls, shader);
-		});
-		return () => {
-			cleanupControls();
-			shader.destroy();
-		};
-	}
 }
 
 document.addEventListener('DOMContentLoaded', main);

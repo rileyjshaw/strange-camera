@@ -26,6 +26,7 @@ export default {
 			loop: true,
 		},
 	},
+	pluginReadyEvents: ['segmenter:ready'],
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,
