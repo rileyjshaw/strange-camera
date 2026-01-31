@@ -1,4 +1,5 @@
 import bigFace from './big-face';
+import blurryface from './blurryface';
 import bodyCamo from './body-camo';
 import bodyDouble from './body-double';
 import channels from './channels';
@@ -17,6 +18,7 @@ import wireface from './wireface';
 
 const scenes = [
 	bigFace,
+	blurryface,
 	bodyCamo,
 	bodyDouble,
 	channels,
