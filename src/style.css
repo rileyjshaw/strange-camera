@@ -30,6 +30,14 @@
 	font-display: swap;
 }
 
+@font-face {
+	font-family: 'Cartograph CF';
+	src: url('./assets/fonts/cartograph-cf-regular.woff2') format('woff2');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
 *,
 *::before,
 *::after {
@@ -125,13 +133,9 @@ h1 {
 		rgba(231, 229, 228, 0.4),
 		var(--color-light)
 	);
-	box-shadow:
-		inset 2px 2px 4px rgba(255, 255, 255, 0.6),
-		inset -2px -2px 4px rgba(0, 0, 0, 0.1),
+	box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.6), inset -2px -2px 4px rgba(0, 0, 0, 0.1),
 		2px 2px 4px rgba(0, 0, 0, 0.1);
-	transition:
-		transform 0.2s ease,
-		box-shadow 0.2s ease;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -163,9 +167,7 @@ h1 {
 		rgba(231, 229, 228, 0.5),
 		var(--color-light)
 	);
-	box-shadow:
-		inset 2px 2px 4px rgba(255, 255, 255, 0.7),
-		inset -2px -2px 4px rgba(0, 0, 0, 0.08),
+	box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.7), inset -2px -2px 4px rgba(0, 0, 0, 0.08),
 		3px 3px 6px rgba(0, 0, 0, 0.12);
 	transform: scale(1.04);
 }
@@ -177,14 +179,10 @@ h1 {
 		rgba(200, 198, 197, 0.6),
 		var(--color-light)
 	);
-	box-shadow:
-		inset 3px 3px 6px rgba(0, 0, 0, 0.2),
-		inset -1px -1px 2px rgba(255, 255, 255, 0.3),
+	box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.2), inset -1px -1px 2px rgba(255, 255, 255, 0.3),
 		1px 1px 2px rgba(0, 0, 0, 0.1);
 	transform: scale(0.88);
-	transition:
-		transform 0.1s ease,
-		box-shadow 0.1s ease;
+	transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 canvas {
@@ -338,6 +336,11 @@ body:is(.settings-open, .controls-hidden) #controls {
 	font-family: 'Megazoid Shade Left', sans-serif;
 }
 
+.visual-controls,
+.controls-list {
+	font-family: 'Cartograph CF', monospace;
+}
+
 .visual-controls {
 	display: flex;
 	justify-content: space-evenly;
@@ -408,7 +411,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 	& > li {
 		counter-increment: item;
 		position: relative;
-		padding-bottom: 1em;
+		padding-bottom: 0.5em;
 		&::before {
 			content: counter(item);
 			width: 2em;
