@@ -7,7 +7,7 @@ function updateUrlHash(scene) {
 }
 
 const urlHash = window.location.hash.slice(1);
-let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? scenes[Math.floor(Math.random() * scenes.length)].hash;
+let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? Math.floor(Math.random() * scenes.length);
 
 const MAX_EXPORT_DIMENSION = 4096;
 
