@@ -17,13 +17,13 @@ export default {
 		x1: HUE_INITIAL,
 		y1: BRIGHTNESS_INITIAL,
 	},
-	controlPrecision: {
-		x1: 0.001,
-		y1: 0.0015,
-	},
 	controlModifiers: {
 		x1: {
+			precision: 0.001,
 			loop: true,
+		},
+		y1: {
+			precision: 0.0015,
 		},
 	},
 	pluginReadyEvents: ['segmenter:ready'],

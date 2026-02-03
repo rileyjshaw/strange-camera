@@ -21,8 +21,10 @@ export default {
 		x1: normalize(MIN_REFRACTION_INTENSITY, MAX_REFRACTION_INTENSITY, REFRACTION_INTENSITY_INITIAL),
 		y1: normalize(MIN_N_STRIPS, MAX_N_STRIPS, N_STRIPS_INITIAL),
 	},
-	controlPrecision: {
-		x1: 0.01,
+	controlModifiers: {
+		x1: {
+			precision: 0.01,
+		},
 	},
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save(), autosize()] });

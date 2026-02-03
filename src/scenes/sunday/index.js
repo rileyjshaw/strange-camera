@@ -14,8 +14,10 @@ export default {
 	hash: 'sunday',
 	controls: [['Glow'], ['Color']],
 	controlValues: { x1: GLOW_AMOUNT_INITIAL, y1: COLOR_VALUE_INITIAL },
-	controlPrecision: {
-		y1: 0.002,
+	controlModifiers: {
+		y1: {
+			precision: 0.002,
+		},
 	},
 	pluginReadyEvents: ['face:ready'],
 	initialize(setShader, canvas) {

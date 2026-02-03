@@ -41,11 +41,9 @@ export default {
 		x2: (PIXEL_SIZE_INITIAL - PIXEL_SIZE_MIN) / (PIXEL_SIZE_MAX - PIXEL_SIZE_MIN),
 		y2: (LOOK_DIST_INITIAL - LOOK_DIST_MIN) / (LOOK_DIST_MAX - LOOK_DIST_MIN),
 	},
-	controlPrecision: {
-		x1: 0.001,
-	},
 	controlModifiers: {
 		x1: {
+			precision: 0.001,
 			loop: true,
 		},
 	},

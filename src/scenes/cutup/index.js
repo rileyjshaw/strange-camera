@@ -80,8 +80,10 @@ export default {
 		x1: normalize(N_SHUFFLES_MIN, N_SHUFFLES_MAX, N_SHUFFLES_INITIAL),
 		y1: normalize(N_STRIPS_MIN, N_STRIPS_MAX, N_STRIPS_INITIAL),
 	},
-	controlPrecision: {
-		x1: 0.002,
+	controlModifiers: {
+		x1: {
+			precision: 0.002,
+		},
 	},
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save(), autosize()] });

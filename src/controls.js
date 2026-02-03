@@ -24,7 +24,7 @@ const controlsListMove = document.getElementById('controls-list-move');
 
 function attachControls(scene, handleMove) {
 	const [xControlsLength, yControlsLength] = scene.controls.map(arr => arr.length);
-	const precisionOverrides = scene.controlPrecision ?? {};
+	const controlModifiers = scene.controlModifiers ?? {};
 
 	titleEl.textContent = scene.name;
 	titleEl.setAttribute('data-text', scene.name);
@@ -39,8 +39,12 @@ function attachControls(scene, handleMove) {
 	});
 
 	const precisionDefaults = generatePrecisionDefaults(scene.controls);
-	const precision = Object.assign({}, precisionDefaults, precisionOverrides);
-	const controlModifiers = scene.controlModifiers ?? {};
+	const precision = Object.fromEntries(
+		Object.keys(precisionDefaults).map(key => [
+			key,
+			controlModifiers[key]?.precision ?? precisionDefaults[key],
+		])
+	);
 
 	function computeValue(currentValues, key, diff) {
 		const newValue = currentValues[key] + diff * precision[key];
