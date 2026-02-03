@@ -11,6 +11,7 @@ import lightTrails from './light-trails';
 import pixelface from './pixelface';
 import salon from './salon';
 import slow from './slow';
+import sorted from './sorted';
 import sunday from './sunday';
 import wiggleX from './wiggle x';
 import wiggleY from './wiggle y';
@@ -30,6 +31,7 @@ const scenes = [
 	pixelface,
 	salon,
 	slow,
+	sorted,
 	sunday,
 	wiggleX,
 	wiggleY,
