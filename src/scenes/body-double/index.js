@@ -7,7 +7,7 @@ import autosize from 'shaderpad/plugins/autosize';
 import fragmentShaderSrc from './body-double.glsl';
 import { normalize, lerp } from '../util.js';
 
-const HISTORY_SIZE = 196;
+const HISTORY_SIZE = 120;
 const N_ECHOES_MIN = 1;
 const N_ECHOES_MAX = Math.floor(HISTORY_SIZE / 8);
 const N_ECHOES_INITIAL = 5;
