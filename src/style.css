@@ -47,6 +47,9 @@
 body {
 	--color-light: #e7e5e4;
 	--color-dark: #0c0a09;
+	--color-red: #fb1c19;
+	--color-blue: #1200c4;
+	--color-light-red: #f44;
 	--settings-margin: 1rem;
 	--visual-control-size: 33;
 	--shadow-y-offset: 0.15em;
@@ -71,29 +74,74 @@ body {
 	animation: fadeIn 0.5s ease 0.5s forwards;
 }
 
-h1,
-#instructions {
-	font-size: 2rem;
-	text-align: center;
-	text-wrap: balance;
-}
-
-h1 {
-	margin: 0 auto;
-	padding-top: 1rem;
-}
-
-#instructions {
-	margin-top: auto;
-}
-
-#app.ready h1,
-#app.ready #instructions {
-	display: none;
-}
-
 #app:not(.ready) #controls {
 	display: none;
+}
+
+#splash {
+	position: fixed;
+	inset: 0;
+	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2rem;
+	padding: 1rem;
+	background: var(--color-dark);
+}
+
+#splash.splash-dismissed {
+	display: none;
+}
+
+.splash-title {
+	position: relative;
+	margin: 0;
+	font-size: 2.5rem;
+	text-align: center;
+	text-wrap: balance;
+	color: var(--color-red);
+}
+
+.splash-title::before {
+	content: attr(data-char);
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	font-family: 'Megazoid Fill', sans-serif;
+	z-index: -1;
+	pointer-events: none;
+	color: var(--color-blue);
+	width: 100%;
+}
+
+.splash-title::after {
+	content: attr(data-char);
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	font-family: 'Megazoid Shade Right', sans-serif;
+	z-index: -2;
+	pointer-events: none;
+	color: var(--color-blue);
+	width: 100%;
+}
+
+.splash-message {
+	margin: 0;
+	font-size: 1.25rem;
+	text-align: center;
+	text-wrap: balance;
+	color: var(--color-light);
+	max-inline-size: 20em;
+}
+
+.splash-start {
+	margin-top: auto;
+	font-size: 2.5rem;
 }
 
 #controls {
@@ -121,7 +169,7 @@ h1 {
 }
 
 .recording #shutter-wrapper {
-	background: #f44;
+	background: var(--color-light-red);
 	animation: pulse-recording 3s ease-in-out infinite;
 }
 
@@ -170,7 +218,7 @@ h1 {
 .recording-dot {
 	width: 12px;
 	height: 12px;
-	background: #f44;
+	background: var(--color-light-red);
 	border-radius: 50%;
 	animation: blink 1s ease-in-out infinite;
 }

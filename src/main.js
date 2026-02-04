@@ -585,4 +585,24 @@ async function main() {
 	switchToScene(currentSceneIndex, true);
 }
 
-document.addEventListener('DOMContentLoaded', main);
+document.addEventListener('DOMContentLoaded', () => {
+	const splash = document.getElementById('splash');
+	const splashStart = document.getElementById('splash-start');
+
+	splashStart.addEventListener('click', async () => {
+		let stream = null;
+		try {
+			stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+		} catch {
+			try {
+				stream = await navigator.mediaDevices.getUserMedia({ video: true });
+			} catch (err) {
+				console.error('Camera permission denied:', err);
+				return;
+			}
+		}
+		stream.getTracks().forEach((t) => t.stop());
+		splash.classList.add('splash-dismissed');
+		main();
+	});
+});

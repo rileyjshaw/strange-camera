@@ -74,6 +74,7 @@
 			content="Take weirder photos. Strange Camera is a free app by rileyjshaw with imaginative, playful, and unique camera filters."
 		/>
 		<meta name="theme-color" content="#bbff35" />
+		<meta name="permissions-policy" content="microphone=(self), camera=(self)" />
 		<link rel="stylesheet" href="/src/style.css" />
 		<link rel="icon" href="/favicon.ico" sizes="48x48" />
 		<link rel="icon" href="/favicon-source.svg" sizes="any" type="image/svg+xml" />
@@ -270,10 +271,21 @@
 		/>
 	</head>
 	<body>
+		<div id="splash">
+			<h1 class="splash-title" data-char="Strange Camera">Strange Camera</h1>
+			<p class="splash-message">Please allow camera and mic access. No data is sent to the server.</p>
+			<button
+				type="button"
+				id="splash-start"
+				class="splash-start scene-nav-button"
+				data-char="Start"
+				aria-label="Start"
+			>
+				Start
+			</button>
+		</div>
 		<div id="app">
-			<h1>Strange Camera</h1>
 			<canvas></canvas>
-			<p id="instructions">Please allow camera access. No data is sent to the server.</p>
 			<div id="recording-indicator" aria-hidden="true">
 				<span class="recording-dot"></span>
 				<span class="recording-time">0:00</span>

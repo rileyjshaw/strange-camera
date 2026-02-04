@@ -14,6 +14,9 @@ export default {
 				description:
 					'Take weirder photos. Strange Camera is a free app by rileyjshaw with imaginative, playful, and unique camera filters.',
 				theme_color: '#bbff35',
+				display: 'standalone',
+				start_url: '/',
+				scope: '/',
 			},
 		}),
 	],
