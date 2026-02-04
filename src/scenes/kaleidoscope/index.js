@@ -43,6 +43,7 @@ export default {
 			loop: true,
 		},
 		x2: {
+			precision: 0.01,
 			loop: true,
 		},
 		x3: {
@@ -50,6 +51,7 @@ export default {
 			loop: true,
 		},
 		y1: {
+			precision: 0.01,
 			loop: true,
 		},
 	},
