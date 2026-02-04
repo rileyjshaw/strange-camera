@@ -139,39 +139,12 @@ h1 {
 	height: 75%;
 	opacity: 0;
 	transition: opacity 0.15s ease;
+	-webkit-user-drag: none;
+	user-drag: none;
 }
 
-.record-locked #shutter .stop-icon {
+.recording #shutter .stop-icon {
 	opacity: 1;
-}
-
-#record-lock {
-	position: absolute;
-	right: calc(100% + 16px);
-	top: 50%;
-	transform: translateY(-50%);
-	width: 44px;
-	height: 44px;
-	background: rgba(0, 0, 0, 0.5);
-	border-radius: 50%;
-	display: none;
-	align-items: center;
-	justify-content: center;
-	transition: transform 0.15s ease, background-color 0.15s ease;
-}
-
-#record-lock img {
-	width: 75%;
-	height: 75%;
-}
-
-.recording:not(.record-locked) #record-lock {
-	display: flex;
-}
-
-#record-lock.lock-hover {
-	transform: translateY(-50%) scale(1.15);
-	background: rgba(0, 0, 0, 0.7);
 }
 
 #recording-indicator {
@@ -236,6 +209,7 @@ h1 {
 #shutter {
 	height: 68px;
 	width: 68px;
+	touch-action: none;
 }
 
 #open-menu,

@@ -1,9 +1,9 @@
 const downloadLink = document.createElement('a');
 
-export default async function saveVideo(blob, filename, text) {
-	if (navigator.share) {
+export default async function saveVideo(blob, type, filename, text, options = {}) {
+	if (!options.preventShare && navigator.share) {
 		try {
-			const file = new File([blob], filename, { type: blob.type });
+			const file = new File([blob], filename, { type });
 			const shareData = { files: [file] };
 			if (text) shareData.text = text;
 			await navigator.share(shareData);
