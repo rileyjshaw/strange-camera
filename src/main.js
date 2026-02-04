@@ -85,8 +85,6 @@ async function main() {
 	let imageInput = null;
 	let currentVideoUrl = null;
 
-	await getAudioStream();
-
 	let isRecording = false;
 	let isRecordLocked = false;
 	let mediaRecorder = null;
@@ -246,11 +244,15 @@ async function main() {
 		play();
 	}
 
-	function startRecording() {
+	async function startRecording() {
 		if (isRecording) return;
 
 		const sceneName = scenes[currentSceneIndex].name;
 		window.posthog?.capture('start_recording', { scene: sceneName });
+
+		if (!audioStream) {
+			await getAudioStream();
+		}
 
 		recordedChunks = [];
 

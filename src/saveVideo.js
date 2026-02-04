@@ -6,10 +6,8 @@ export default async function saveVideo(blob, filename, text) {
 			const file = new File([blob], filename, { type: blob.type });
 			const shareData = { files: [file] };
 			if (text) shareData.text = text;
-			if (!navigator.canShare || navigator.canShare(shareData)) {
-				await navigator.share(shareData);
-				return;
-			}
+			await navigator.share(shareData);
+			return;
 		} catch (err) {
 			if (err?.name === 'AbortError') return;
 		}
