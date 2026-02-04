@@ -389,6 +389,14 @@ async function main() {
 					cycleCamera();
 				}
 				break;
+			case 'a':
+			case 'A':
+				switchToScene((currentSceneIndex - 1 + scenes.length) % scenes.length);
+				break;
+			case 'd':
+			case 'D':
+				switchToScene((currentSceneIndex + 1) % scenes.length);
+				break;
 			case 'ArrowRight':
 				if (isSettingsOpen) {
 					switchToScene((currentSceneIndex + 1) % scenes.length);
