@@ -247,13 +247,17 @@ async function main() {
 	async function startRecording() {
 		if (isRecording) return;
 
-		const sceneName = scenes[currentSceneIndex].name;
-		window.posthog?.capture('start_recording', { scene: sceneName });
-
 		if (!audioStream) {
+			const micPermission = await navigator.permissions.query({ name: 'microphone' });
 			await getAudioStream();
+			if (micPermission.state !== 'granted') {
+				isRecordLocked = true;
+				document.body.classList.add('record-locked');
+			}
 		}
 
+		const sceneName = scenes[currentSceneIndex].name;
+		window.posthog?.capture('start_recording', { scene: sceneName });
 		recordedChunks = [];
 
 		const canvasStream = canvas.captureStream(30);
