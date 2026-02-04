@@ -8,6 +8,7 @@ import cutup from './cutup';
 import faceCamo from './face-camo';
 import fill from './fill';
 import fishbowl from './fishbowl';
+import kaleidoscope from './kaleidoscope';
 import lightTrails from './light-trails';
 import pixelface from './pixelface';
 import salon from './salon';
@@ -29,6 +30,7 @@ const scenes = [
 	faceCamo,
 	fill,
 	fishbowl,
+	kaleidoscope,
 	lightTrails,
 	pixelface,
 	salon,
