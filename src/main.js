@@ -402,6 +402,7 @@ async function main() {
 
 	function handleShutterDown() {
 		isShutterPressed = true;
+		recordingStartedFromCurrentPress = false;
 		if (isSettingsOpen || isRecording) return;
 
 		holdTimeout = setTimeout(() => {
