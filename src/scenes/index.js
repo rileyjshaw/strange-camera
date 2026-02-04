@@ -6,6 +6,7 @@ import channels from './channels';
 import cutGlass from './cut-glass';
 import cutup from './cutup';
 import faceCamo from './face-camo';
+import fill from './fill';
 import fishbowl from './fishbowl';
 import lightTrails from './light-trails';
 import pixelface from './pixelface';
@@ -26,6 +27,7 @@ const scenes = [
 	cutGlass,
 	cutup,
 	faceCamo,
+	fill,
 	fishbowl,
 	lightTrails,
 	pixelface,
