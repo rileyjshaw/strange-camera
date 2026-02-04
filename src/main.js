@@ -1,5 +1,6 @@
 import handleTouch from './handleTouch';
 import attachControls from './controls';
+import saveVideo from './saveVideo';
 import scenes, { sceneHashToIndex } from './scenes';
 
 function updateUrlHash(scene) {
@@ -10,8 +11,20 @@ const urlHash = window.location.hash.slice(1);
 let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? Math.floor(Math.random() * scenes.length);
 
 const MAX_EXPORT_DIMENSION = 4096;
+const HOLD_THRESHOLD_MS = 300;
 
 let hasCameraPermission = false;
+let audioStream = null;
+
+async function getAudioStream() {
+	try {
+		audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+		return audioStream;
+	} catch {
+		return null;
+	}
+}
+
 async function getCameraStream(facingMode = 'user', deviceId = null) {
 	const video = document.createElement('video');
 	video.autoplay = video.playsInline = video.muted = true;
@@ -72,13 +85,24 @@ async function main() {
 	let imageInput = null;
 	let currentVideoUrl = null;
 
+	await getAudioStream();
+
+	let isRecording = false;
+	let isRecordLocked = false;
+	let mediaRecorder = null;
+	let recordedChunks = [];
+	let recordingStartTime = null;
+	let recordingTimerInterval = null;
+	const recordingTimeEl = document.querySelector('.recording-time');
+	const recordLockEl = document.querySelector('#record-lock');
+
 	let play;
 
 	const app = document.getElementById('app');
 	const settingsEl = document.getElementById('settings');
 	const titleEl = document.getElementById('title');
 	const canvas = document.querySelector('canvas');
-	const gl = canvas.getContext('webgl2', { antialias: false });
+	const gl = canvas.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
 
 	const shutterButton = document.querySelector('#shutter');
 	const openMenuButton = document.querySelector('#open-menu');
@@ -222,6 +246,88 @@ async function main() {
 		play();
 	}
 
+	function startRecording() {
+		if (isRecording) return;
+
+		const sceneName = scenes[currentSceneIndex].name;
+		window.posthog?.capture('start_recording', { scene: sceneName });
+
+		recordedChunks = [];
+
+		const canvasStream = canvas.captureStream(30);
+		const tracks = [...canvasStream.getVideoTracks()];
+		if (audioStream) {
+			tracks.push(...audioStream.getAudioTracks());
+		}
+		const combinedStream = new MediaStream(tracks);
+
+		const mimeTypes = [
+			'video/mp4;codecs=avc1,mp4a.40.2',
+			'video/mp4',
+			'video/webm;codecs=vp9,opus',
+			'video/webm;codecs=vp8,opus',
+			'video/webm',
+		];
+		let mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
+
+		mediaRecorder = new MediaRecorder(combinedStream, {
+			mimeType,
+			videoBitsPerSecond: 2_500_000,
+			audioBitsPerSecond: 128_000,
+		});
+
+		mediaRecorder.ondataavailable = event => {
+			if (event.data.size > 0) {
+				recordedChunks.push(event.data);
+			}
+		};
+
+		const recorderMimeType = mediaRecorder.mimeType || mimeType;
+		mediaRecorder.onstop = () => {
+			if (recordedChunks.length === 0) return;
+			const blob = new Blob(recordedChunks, { type: recorderMimeType });
+			const extension = recorderMimeType.includes('mp4') ? 'mp4' : 'webm';
+			const filename = `Strange Camera - ${sceneName}.${extension}`;
+			saveVideo(blob, filename);
+			recordedChunks = [];
+		};
+
+		mediaRecorder.start(1000);
+		isRecording = true;
+		document.body.classList.add('recording');
+
+		recordingStartTime = Date.now();
+		updateRecordingTime();
+		recordingTimerInterval = setInterval(updateRecordingTime, 1000);
+	}
+
+	function updateRecordingTime() {
+		if (!recordingStartTime) return;
+		const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+		const minutes = Math.floor(elapsed / 60);
+		const seconds = elapsed % 60;
+		recordingTimeEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+	}
+
+	function stopRecording() {
+		if (!isRecording || !mediaRecorder) return;
+
+		const sceneName = scenes[currentSceneIndex].name;
+		window.posthog?.capture('stop_recording', { scene: sceneName });
+
+		mediaRecorder.stop();
+		isRecording = false;
+		isRecordLocked = false;
+		document.body.classList.remove('recording', 'record-locked');
+		recordLockEl.classList.remove('lock-hover');
+		mediaRecorder = null;
+
+		clearInterval(recordingTimerInterval);
+		recordingTimerInterval = null;
+		recordingStartTime = null;
+		recordingTimeEl.textContent = '0:00';
+	}
+
 	function stopWebcamStream() {
 		if (videoInput.srcObject) {
 			videoInput.srcObject.getTracks().forEach(track => track.stop());
@@ -290,7 +396,120 @@ async function main() {
 			}
 		}
 	}
-	shutterButton.addEventListener('click', exportHighRes);
+	let shutterPressStart = null;
+	let holdTimeout = null;
+	let didStartRecording = false;
+
+	function isOverLockIcon(clientX, clientY) {
+		const lockRect = recordLockEl.getBoundingClientRect();
+		return (
+			clientX >= lockRect.left &&
+			clientX <= lockRect.right &&
+			clientY >= lockRect.top &&
+			clientY <= lockRect.bottom
+		);
+	}
+
+	function handleShutterDown(e) {
+		e.preventDefault();
+		if (isSettingsOpen) return;
+
+		if (isRecordLocked) {
+			stopRecording();
+			return;
+		}
+
+		shutterPressStart = Date.now();
+		didStartRecording = false;
+
+		holdTimeout = setTimeout(() => {
+			didStartRecording = true;
+			startRecording();
+		}, HOLD_THRESHOLD_MS);
+	}
+
+	function handleShutterMove(e) {
+		if (!isRecording || isRecordLocked) return;
+
+		const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+		const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+		if (isOverLockIcon(clientX, clientY)) {
+			recordLockEl.classList.add('lock-hover');
+		} else {
+			recordLockEl.classList.remove('lock-hover');
+		}
+	}
+
+	function handleShutterUp(e) {
+		e.preventDefault();
+		if (isSettingsOpen) return;
+		if (isRecordLocked) return;
+
+		clearTimeout(holdTimeout);
+
+		if (isRecording) {
+			const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+			const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+
+			if (isOverLockIcon(clientX, clientY)) {
+				isRecordLocked = true;
+				document.body.classList.add('record-locked');
+				recordLockEl.classList.remove('lock-hover');
+			} else {
+				stopRecording();
+			}
+		} else if (!didStartRecording && shutterPressStart) {
+			exportHighRes();
+		}
+
+		shutterPressStart = null;
+		didStartRecording = false;
+	}
+
+	function handleShutterLeave(e) {
+		if (isRecordLocked) return;
+		if (isRecording) return;
+
+		clearTimeout(holdTimeout);
+		shutterPressStart = null;
+		didStartRecording = false;
+	}
+
+	shutterButton.addEventListener('mousedown', handleShutterDown);
+	shutterButton.addEventListener('mouseup', handleShutterUp);
+	shutterButton.addEventListener('mousemove', handleShutterMove);
+	shutterButton.addEventListener('mouseleave', handleShutterLeave);
+	shutterButton.addEventListener('touchstart', handleShutterDown, { passive: false });
+	shutterButton.addEventListener('touchend', handleShutterUp, { passive: false });
+	shutterButton.addEventListener('touchmove', handleShutterMove, { passive: false });
+	shutterButton.addEventListener('touchcancel', handleShutterLeave);
+
+	document.addEventListener('mousemove', e => {
+		if (!isRecording || isRecordLocked) return;
+		handleShutterMove(e);
+	});
+	document.addEventListener(
+		'touchmove',
+		e => {
+			if (!isRecording || isRecordLocked) return;
+			handleShutterMove(e);
+		},
+		{ passive: false }
+	);
+	document.addEventListener('mouseup', e => {
+		if (!isRecording || isRecordLocked || !shutterPressStart) return;
+		handleShutterUp(e);
+	});
+	document.addEventListener(
+		'touchend',
+		e => {
+			if (!isRecording || isRecordLocked || !shutterPressStart) return;
+			handleShutterUp(e);
+		},
+		{ passive: false }
+	);
+
 	openMenuButton.addEventListener('click', toggleSettings);
 	flipCameraButton.addEventListener('click', flipCamera);
 	goButton.addEventListener('click', toggleSettings);

@@ -274,6 +274,10 @@
 			<h1>Strange Camera</h1>
 			<canvas></canvas>
 			<p id="instructions">Please allow camera access. No data is sent to the server.</p>
+			<div id="recording-indicator" aria-hidden="true">
+				<span class="recording-dot"></span>
+				<span class="recording-time">0:00</span>
+			</div>
 			<div id="controls">
 				<div class="control-button-wrapper">
 					<button id="open-menu" class="control-button" aria-label="Open menu">
@@ -281,7 +285,12 @@
 					</button>
 				</div>
 				<div id="shutter-wrapper" class="control-button-wrapper">
-					<button id="shutter" class="control-button" aria-label="Take a photo"></button>
+					<div id="record-lock" aria-hidden="true">
+						<img src="/src/assets/images/lock.svg" alt="" />
+					</div>
+					<button id="shutter" class="control-button" aria-label="Take a photo or hold to record">
+						<img src="/src/assets/images/stop.svg" alt="" class="stop-icon" />
+					</button>
 				</div>
 				<div class="control-button-wrapper">
 					<button id="flip-camera" class="control-button" aria-label="Flip camera">

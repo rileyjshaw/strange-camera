@@ -111,11 +111,95 @@ h1 {
 	place-items: center;
 	background: #b0b0b0;
 	border-radius: 50%;
+	transition: opacity 0.15s ease;
 }
 
 #shutter-wrapper {
 	height: 80px;
 	width: 80px;
+	transition: background-color 0.2s ease;
+}
+
+.recording #shutter-wrapper {
+	background: #f44;
+	animation: pulse-recording 3s ease-in-out infinite;
+}
+
+.recording #shutter {
+	background: radial-gradient(circle at 30% 30%, rgba(255, 220, 220, 0.8), rgba(255, 200, 200, 0.6), #ffd6d6);
+}
+
+.recording .control-button-wrapper:not(#shutter-wrapper) {
+	opacity: 0;
+	pointer-events: none;
+}
+
+#shutter .stop-icon {
+	width: 75%;
+	height: 75%;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.record-locked #shutter .stop-icon {
+	opacity: 1;
+}
+
+#record-lock {
+	position: absolute;
+	right: calc(100% + 16px);
+	top: 50%;
+	transform: translateY(-50%);
+	width: 44px;
+	height: 44px;
+	background: rgba(0, 0, 0, 0.5);
+	border-radius: 50%;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+#record-lock img {
+	width: 75%;
+	height: 75%;
+}
+
+.recording:not(.record-locked) #record-lock {
+	display: flex;
+}
+
+#record-lock.lock-hover {
+	transform: translateY(-50%) scale(1.15);
+	background: rgba(0, 0, 0, 0.7);
+}
+
+#recording-indicator {
+	position: fixed;
+	top: 1rem;
+	left: 1rem;
+	display: none;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 0.75rem;
+	color: var(--color-light);
+	background: rgba(0, 0, 0, 0.6);
+	border-radius: 6px;
+	font-family: 'Cartograph CF', monospace;
+	font-size: 1rem;
+	z-index: 10;
+}
+
+.recording #recording-indicator {
+	display: flex;
+}
+
+.recording-dot {
+	width: 12px;
+	height: 12px;
+	background: #f44;
+	border-radius: 50%;
+	animation: blink 1s ease-in-out infinite;
 }
 
 .control-button-wrapper:not(#shutter-wrapper) {
@@ -453,15 +537,6 @@ body:is(.settings-open, .controls-hidden) #controls {
 	}
 }
 
-@keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
 /* Prevent text selection and tap highlights. */
 button,
 a,
@@ -474,8 +549,36 @@ a,
 	appearance: none !important;
 }
 
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
 @keyframes spin {
 	to {
 		transform: rotate(360deg);
+	}
+}
+
+@keyframes blink {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.3;
+	}
+}
+
+@keyframes pulse-recording {
+	0% {
+		box-shadow: 0 0 0 0 rgba(244, 68, 68, 0.7);
+	}
+	50% {
+		box-shadow: 0 0 0 12px rgba(244, 68, 68, 0);
 	}
 }
