@@ -14,28 +14,49 @@ const MAX_EXPORT_DIMENSION = 4096;
 const HOLD_THRESHOLD_MS = 300;
 
 let hasCameraPermission = false;
-let audioStream = null;
 
-async function getAudioStream() {
-	try {
-		audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-		return audioStream;
-	} catch {
-		return null;
-	}
+let sessionAudioTrack = null;
+
+function checkMicHealth() {
+	if (!sessionAudioTrack) return false;
+	if (sessionAudioTrack.readyState !== 'live') return false;
+	if (!sessionAudioTrack.enabled) return false;
+	return true;
 }
 
-async function getCameraStream(facingMode = 'user', deviceId = null) {
+async function reacquireMic() {
+	try {
+		const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+		const track = stream.getAudioTracks()[0];
+		if (track) {
+			if (sessionAudioTrack) {
+				sessionAudioTrack.stop();
+			}
+			sessionAudioTrack = track;
+			return true;
+		}
+	} catch {
+		// ignore
+	}
+	return false;
+}
+
+async function getCameraStream(existingStream = null, facingMode = 'user', deviceId = null) {
 	const video = document.createElement('video');
 	video.autoplay = video.playsInline = video.muted = true;
 
 	try {
-		const constraints = {
-			video: deviceId
-				? { deviceId: { exact: deviceId }, width: { ideal: 1280, max: 1920 } }
-				: { facingMode, width: { ideal: 1280, max: 1920 } },
-		};
-		const stream = await navigator.mediaDevices.getUserMedia(constraints);
+		let stream;
+		if (existingStream && existingStream.getVideoTracks().length > 0) {
+			stream = existingStream;
+		} else {
+			const constraints = {
+				video: deviceId
+					? { deviceId: { exact: deviceId }, width: { ideal: 1280, max: 1920 } }
+					: { facingMode, width: { ideal: 1280, max: 1920 } },
+			};
+			stream = await navigator.mediaDevices.getUserMedia(constraints);
+		}
 		hasCameraPermission = true;
 		video.srcObject = stream;
 		await new Promise(resolve => (video.onloadedmetadata = resolve));
@@ -67,7 +88,7 @@ async function listCameras() {
 // “y” is the longer axis; higher resolution but space for multiple is limited.
 const defaultUserControls = { x1: 0.5, x2: 0.5, x3: 0.5, y1: 0.5, y2: 0.5 };
 
-async function main() {
+async function main(initialVideoStream = null) {
 	// State.
 	let currentFacingMode = 'user'; // Selfie camera.
 	document.body.classList.add('flipped');
@@ -81,9 +102,11 @@ async function main() {
 	let hasBothFacingModes = false;
 
 	let shader;
-	let videoInput = await getCameraStream(currentFacingMode);
+	let videoInput = await getCameraStream(initialVideoStream, currentFacingMode);
 	let imageInput = null;
 	let currentVideoUrl = null;
+
+	const audioProblemIndicator = document.getElementById('audio-problem-indicator');
 
 	let isRecording = false;
 	let mediaRecorder = null;
@@ -250,17 +273,19 @@ async function main() {
 		isRecording = true;
 		document.body.classList.add('recording');
 
-		if (!audioStream) {
-			await getAudioStream();
+		let isMicHealthy = checkMicHealth();
+		if (!isMicHealthy) {
+			isMicHealthy = await reacquireMic();
 		}
+		audioProblemIndicator.style.display = isMicHealthy ? 'none' : 'flex';
 
 		const sceneName = scenes[currentSceneIndex].name;
 		window.posthog?.capture('start_recording', { scene: sceneName });
 
 		const canvasStream = canvas.captureStream(30);
 		const tracks = [...canvasStream.getVideoTracks()];
-		if (audioStream) {
-			tracks.push(...audioStream.getAudioTracks());
+		if (checkMicHealth() && sessionAudioTrack) {
+			tracks.push(sessionAudioTrack);
 		}
 		const combinedStream = new MediaStream(tracks);
 
@@ -321,6 +346,7 @@ async function main() {
 		isRecording = false;
 		document.body.classList.remove('recording');
 		mediaRecorder = null;
+		audioProblemIndicator.style.display = 'none';
 
 		clearInterval(recordingTimerInterval);
 		recordingTimerInterval = null;
@@ -345,7 +371,7 @@ async function main() {
 		currentCameraIndex[newFacingMode] = 0;
 		currentDeviceId = null;
 		try {
-			videoInput = await getCameraStream(newFacingMode);
+			videoInput = await getCameraStream(null, newFacingMode);
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			shader.updateTextures({ u_inputStream: videoInput });
 			currentFacingMode = newFacingMode;
@@ -380,7 +406,7 @@ async function main() {
 
 		try {
 			removeVideoInput();
-			videoInput = await getCameraStream(currentFacingMode, nextCamera.deviceId);
+			videoInput = await getCameraStream(null, currentFacingMode, nextCamera.deviceId);
 			currentDeviceId = nextCamera.deviceId;
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			shader.updateTextures({ u_inputStream: videoInput });
@@ -388,7 +414,7 @@ async function main() {
 			console.error('Failed to switch to next camera:', error);
 			// Try falling back to facingMode-only constraint
 			try {
-				videoInput = await getCameraStream(currentFacingMode);
+				videoInput = await getCameraStream(null, currentFacingMode);
 				document.body.appendChild(videoInput);
 				shader.updateTextures({ u_inputStream: videoInput });
 			} catch (fallbackError) {
@@ -596,13 +622,21 @@ document.addEventListener('DOMContentLoaded', () => {
 		} catch {
 			try {
 				stream = await navigator.mediaDevices.getUserMedia({ video: true });
-			} catch (err) {
-				console.error('Camera permission denied:', err);
+			} catch (videoErr) {
+				console.error('Camera permission denied:', videoErr);
 				return;
 			}
 		}
-		stream.getTracks().forEach((t) => t.stop());
+
+		const audioTracks = stream.getAudioTracks();
+		if (audioTracks.length > 0) {
+			sessionAudioTrack = audioTracks[0];
+		}
+
+		const videoTracks = stream.getVideoTracks();
+		const initialVideoStream = videoTracks.length > 0 ? new MediaStream(videoTracks) : null;
+
 		splash.classList.add('splash-dismissed');
-		main();
+		main(initialVideoStream);
 	});
 });

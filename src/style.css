@@ -223,6 +223,27 @@ body {
 	animation: blink 1s ease-in-out infinite;
 }
 
+#audio-problem-indicator {
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem;
+	background: rgba(0, 0, 0, 0.6);
+	border-radius: 6px;
+	z-index: 10;
+}
+
+.audio-problem-dot {
+	width: 14px;
+	height: 14px;
+	background: var(--color-red);
+	border-radius: 50%;
+	box-shadow: 0 0 6px var(--color-red);
+}
+
 .control-button-wrapper:not(#shutter-wrapper) {
 	height: 52px;
 	width: 52px;
