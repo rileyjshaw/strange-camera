@@ -38,6 +38,14 @@
 	font-display: swap;
 }
 
+@font-face {
+	font-family: 'Cartograph CF';
+	src: url('./assets/fonts/cartograph-cf-regular-italic.woff2') format('woff2');
+	font-weight: normal;
+	font-style: italic;
+	font-display: swap;
+}
+
 *,
 *::before,
 *::after {
@@ -58,7 +66,7 @@ body {
 	overflow: hidden;
 	color: var(--color-light);
 	background: var(--color-dark);
-	font-family: 'Megazoid', sans-serif;
+	font-family: 'Cartograph CF', monospace;
 	font-size: 1.25rem;
 }
 
@@ -99,7 +107,8 @@ body {
 	gap: 2rem;
 	padding: 1rem;
 	background: var(--color-dark);
-	max-height: 600px;
+	max-width: 400px;
+	max-height: 540px;
 	margin: auto;
 }
 
@@ -108,12 +117,19 @@ body {
 }
 
 .splash-title {
+	font-family: 'Megazoid', sans-serif;
 	position: relative;
 	margin: 0;
+	margin-bottom: 1rem;
 	font-size: 5rem;
 	text-align: center;
 	text-wrap: balance;
 	color: var(--color-red);
+	line-height: 0.84;
+}
+
+.flicker {
+	animation: flicker 5s steps(50, end) infinite;
 }
 
 .splash-title::before {
@@ -143,17 +159,12 @@ body {
 }
 
 .splash-message {
-	font-family: 'Cartograph CF', monospace;
-	margin: 0;
-	font-size: 1.25rem;
+	font-size: 20px;
+	font-style: italic;
 	text-align: center;
 	text-wrap: balance;
 	color: var(--color-light);
-	max-inline-size: 20em;
-}
-
-.splash-start {
-	margin-top: auto;
+	margin: 0;
 }
 
 #controls {
@@ -428,6 +439,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 
 #settings h2,
 .go-button {
+	font-family: 'Megazoid', sans-serif;
 	font-weight: normal;
 	text-align: center;
 	flex: 1;
@@ -441,7 +453,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 #splash-start {
 	flex: none !important;
 	color: var(--color-light-green);
-	font-size: 4rem;
+	font-size: 8rem;
 	animation: splash-wobble 1s ease-in-out infinite;
 }
 
@@ -624,6 +636,27 @@ a,
 	}
 	50% {
 		transform: rotate(-4deg);
+	}
+}
+
+@keyframes flicker {
+	0%,
+	3%,
+	7%,
+	23%,
+	27%,
+	53%,
+	57%,
+	83%,
+	87%,
+	100% {
+		color: var(--color-dark);
+	}
+	5%,
+	25%,
+	55%,
+	85% {
+		color: inherit;
 	}
 }
 

@@ -624,7 +624,19 @@ document.addEventListener('DOMContentLoaded', () => {
 				stream = await navigator.mediaDevices.getUserMedia({ video: true });
 			} catch (videoErr) {
 				console.error('Camera permission denied:', videoErr);
-				return;
+				const splashTitle = splash.querySelector('.splash-title');
+				const splashTitleCamera = splashTitle.querySelector('.camera');
+				const splashMessage = splash.querySelector('.splash-message');
+				splashTitleCamera.classList.add('flicker');
+				splashMessage.textContent =
+					'There’s an error because we couldn’t get camera access. Camera permission is needed to take photos in this app. Please reload this page and grant access, or update the settings for your device or browser. Each photo / video remains 100% on your device and isn’t sent to a server.';
+				const extraMessage = document.createElement('p');
+				extraMessage.className = 'splash-message';
+				extraMessage.textContent =
+					'We took a long time writing this error message so every line has the same number of characters. Very difficult. Anyway, if you grant access to your camera and mic next time you can start actually using the fun parts of this site. Good luck. We believe in you. See you again soon!';
+				splashMessage.after(extraMessage);
+
+				splashStart.style.display = 'none';
 			}
 		}
 
