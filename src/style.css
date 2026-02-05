@@ -49,7 +49,8 @@ body {
 	--color-dark: #0c0a09;
 	--color-red: #fb1c19;
 	--color-blue: #1200c4;
-	--color-light-red: #f44;
+	--color-dark-green: #28dc2a;
+	--color-light-green: #bbff35;
 	--settings-margin: 1rem;
 	--visual-control-size: 33;
 	--shadow-y-offset: 0.15em;
@@ -64,6 +65,10 @@ body {
 .go-button {
 	all: unset;
 	cursor: pointer;
+}
+
+.go-button::after {
+	color: var(--color-dark-green) !important;
 }
 
 #app {
@@ -94,8 +99,8 @@ body {
 	gap: 2rem;
 	padding: 1rem;
 	background: var(--color-dark);
-	max-height: 460px;
-	margin-block: auto;
+	max-height: 600px;
+	margin: auto;
 }
 
 #splash.splash-dismissed {
@@ -176,7 +181,7 @@ body {
 }
 
 .recording #shutter-wrapper {
-	background: var(--color-light-red);
+	background: var(--color-red);
 	animation: pulse-recording 3s ease-in-out infinite;
 }
 
@@ -225,7 +230,7 @@ body {
 .recording-dot {
 	width: 12px;
 	height: 12px;
-	background: var(--color-light-red);
+	background: var(--color-red);
 	border-radius: 50%;
 	animation: blink 1s ease-in-out infinite;
 }
@@ -435,6 +440,9 @@ body:is(.settings-open, .controls-hidden) #controls {
 
 #splash-start {
 	flex: none !important;
+	color: var(--color-light-green);
+	font-size: 4rem;
+	animation: splash-wobble 1s ease-in-out infinite;
 }
 
 #settings h2::after,
@@ -455,6 +463,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 }
 
 .scene-navigation button {
+	font-size: 2.5rem;
 	transition: color 0.1s ease;
 }
 .scene-navigation button:hover:not(:active) {
@@ -462,7 +471,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 }
 .scene-navigation button:active,
 .scene-navigation button:focus {
-	color: #f50;
+	color: var(--color-red);
 }
 
 .scene-nav-button {
@@ -605,6 +614,16 @@ a,
 	}
 	to {
 		opacity: 1;
+	}
+}
+
+@keyframes splash-wobble {
+	0%,
+	100% {
+		transform: rotate(4deg);
+	}
+	50% {
+		transform: rotate(-4deg);
 	}
 }
 
