@@ -7,42 +7,51 @@ import autosize from 'shaderpad/plugins/autosize';
 
 import positionShaderSrc from './sorted-positions.glsl';
 import outputShaderSrc from './sorted-output.glsl';
-import { lerp } from '../util.js';
+import { lerp, normalize } from '../util.js';
 
-const ANGLE_MIN = 0;
-const ANGLE_MAX = Math.PI * 2;
-const ANGLE_INITIAL = Math.PI * 0.75;
+const ITERATIONS_MIN = 1;
+const ITERATIONS_MAX = 8;
+const ITERATIONS_INITIAL = 1;
 
 const THRESHOLD_MIN = 0.2;
 const THRESHOLD_MAX = 2.0;
 const THRESHOLD_INITIAL = 1.4;
 
-const PIXEL_SIZE_MIN = 1;
-const PIXEL_SIZE_MAX = 32;
-const PIXEL_SIZE_INITIAL = 1;
-
 const LOOK_DIST_MIN = 1;
 const LOOK_DIST_MAX = 64;
 const LOOK_DIST_INITIAL = 1;
 
+const ANGLE_MIN = 0;
+const ANGLE_MAX = Math.PI * 2;
+const ANGLE_INITIAL = Math.PI * 0.75;
+
+const PIXEL_SIZE_MIN = 1;
+const PIXEL_SIZE_MAX = 32;
+const PIXEL_SIZE_INITIAL = 1;
+
 let positionShader, outputShader;
 let currentInput = null;
+let iterations = ITERATIONS_INITIAL;
 
 export default {
 	name: 'Sorted',
 	hash: 'sorted',
 	controls: [
+		['Iterations', 'Swap similarity', 'Look distance'],
 		['Sort angle', 'Pixel size'],
-		['Threshold', 'Look distance'],
 	],
 	controlValues: {
-		x1: (ANGLE_INITIAL - ANGLE_MIN) / (ANGLE_MAX - ANGLE_MIN),
-		y1: (THRESHOLD_INITIAL - THRESHOLD_MIN) / (THRESHOLD_MAX - THRESHOLD_MIN),
-		x2: (PIXEL_SIZE_INITIAL - PIXEL_SIZE_MIN) / (PIXEL_SIZE_MAX - PIXEL_SIZE_MIN),
-		y2: (LOOK_DIST_INITIAL - LOOK_DIST_MIN) / (LOOK_DIST_MAX - LOOK_DIST_MIN),
+		x1: normalize(ITERATIONS_MIN, ITERATIONS_MAX, ITERATIONS_INITIAL),
+		x2: normalize(THRESHOLD_MIN, THRESHOLD_MAX, THRESHOLD_INITIAL),
+		x3: normalize(LOOK_DIST_MIN, LOOK_DIST_MAX, LOOK_DIST_INITIAL),
+		y1: normalize(ANGLE_MIN, ANGLE_MAX, ANGLE_INITIAL),
+		y2: normalize(PIXEL_SIZE_MIN, PIXEL_SIZE_MAX, PIXEL_SIZE_INITIAL),
 	},
 	controlModifiers: {
 		x1: {
+			precision: 0.001,
+		},
+		y1: {
 			precision: 0.001,
 			loop: true,
 		},
@@ -111,7 +120,9 @@ export default {
 					cb();
 					if (currentInput) {
 						positionShader.updateTextures({ u_inputStream: currentInput });
-						positionShader.step();
+						for (let i = 0; i < iterations; ++i) {
+							positionShader.step();
+						}
 						outputShader.updateTextures(
 							{
 								u_inputStream: currentInput,
@@ -148,11 +159,12 @@ export default {
 
 		setShader(composite);
 	},
-	onUpdate({ x1, y1, x2, y2 }, shader) {
-		const sortAngle = lerp(ANGLE_MIN, ANGLE_MAX, x1);
-		const threshold = lerp(THRESHOLD_MIN, THRESHOLD_MAX, y1);
-		const pixelSize = Math.round(lerp(PIXEL_SIZE_MIN, PIXEL_SIZE_MAX, x2));
-		const lookDist = Math.round(lerp(LOOK_DIST_MIN, LOOK_DIST_MAX, y2));
+	onUpdate({ x1, x2, x3, y1, y2 }, shader) {
+		iterations = Math.round(lerp(ITERATIONS_MIN, ITERATIONS_MAX, x1));
+		const threshold = lerp(THRESHOLD_MIN, THRESHOLD_MAX, x2);
+		const lookDist = Math.round(lerp(LOOK_DIST_MIN, LOOK_DIST_MAX, x3));
+		const sortAngle = lerp(ANGLE_MIN, ANGLE_MAX, y1);
+		const pixelSize = Math.round(lerp(PIXEL_SIZE_MIN, PIXEL_SIZE_MAX, y2));
 		shader.updateUniforms({
 			u_sortAngle: sortAngle,
 			u_threshold: threshold,
