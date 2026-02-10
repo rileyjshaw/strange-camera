@@ -648,7 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		const videoTracks = stream.getVideoTracks();
 		const initialVideoStream = videoTracks.length > 0 ? new MediaStream(videoTracks) : null;
 
-		splash.classList.add('splash-dismissed');
+		document.body.classList.add('splash-dismissed');
 		main(initialVideoStream);
 	});
 });

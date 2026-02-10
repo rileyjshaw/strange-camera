@@ -62,8 +62,9 @@ body {
 	--settings-margin: 1rem;
 	--visual-control-size: 33;
 	--shadow-y-offset: 0.15em;
+	display: flex;
+	height: 100dvh;
 	margin: 0;
-	overflow: hidden;
 	color: var(--color-light);
 	background: var(--color-dark);
 	font-family: 'Cartograph CF', monospace;
@@ -80,11 +81,16 @@ body {
 }
 
 #app {
+	display: none;
+}
+.splash-dismissed #app {
+	display: flex;
+}
+#app {
 	position: fixed;
 	inset: 0;
 	padding: 1rem;
 	z-index: 2;
-	display: flex;
 	flex-direction: column;
 	align-items: center;
 	width: 100%;
@@ -97,22 +103,18 @@ body {
 }
 
 #splash {
-	position: fixed;
-	inset: 0;
-	z-index: 10;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
 	gap: 2rem;
 	padding: 1rem;
-	background: var(--color-dark);
 	max-width: 400px;
-	max-height: 540px;
+	height: 540px;
+	max-height: 100%;
 	margin: auto;
 }
 
-#splash.splash-dismissed {
+.splash-dismissed #splash {
 	display: none;
 }
 
