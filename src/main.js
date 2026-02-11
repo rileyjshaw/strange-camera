@@ -12,6 +12,7 @@ let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? Math.floor(Math.random(
 
 const MAX_EXPORT_DIMENSION = 4096;
 const HOLD_THRESHOLD_MS = 300;
+const VIDEO_WIDTH = { ideal: 1280, max: 1920 };
 
 let hasCameraPermission = false;
 
@@ -52,8 +53,8 @@ async function getCameraStream(existingStream = null, facingMode = 'user', devic
 		} else {
 			const constraints = {
 				video: deviceId
-					? { deviceId: { exact: deviceId }, width: { ideal: 1280, max: 1920 } }
-					: { facingMode, width: { ideal: 1280, max: 1920 } },
+					? { deviceId: { exact: deviceId }, width: VIDEO_WIDTH }
+					: { facingMode, width: VIDEO_WIDTH },
 			};
 			stream = await navigator.mediaDevices.getUserMedia(constraints);
 		}
@@ -617,11 +618,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	splashStart.addEventListener('click', async () => {
 		let stream = null;
+		const videoConstraints = { facingMode: 'user', width: VIDEO_WIDTH };
 		try {
-			stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+			stream = await navigator.mediaDevices.getUserMedia({
+				video: videoConstraints,
+				audio: true,
+			});
 		} catch {
 			try {
-				stream = await navigator.mediaDevices.getUserMedia({ video: true });
+				stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
 			} catch (videoErr) {
 				console.error('Camera permission denied:', videoErr);
 				const splashTitle = splash.querySelector('.splash-title');
