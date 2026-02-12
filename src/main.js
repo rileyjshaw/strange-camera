@@ -12,7 +12,27 @@ let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? Math.floor(Math.random(
 
 const MAX_EXPORT_DIMENSION = 4096;
 const HOLD_THRESHOLD_MS = 300;
-const VIDEO_WIDTH = { ideal: 1280, max: 1920 };
+const DEFAULT_INPUT_WIDTH = { ideal: 1280, max: 1920 };
+
+function getVideoWidthConstraint(canvasWidth, canvasHeight, sourceWidth, sourceHeight, maxTextureSize) {
+	const cw = Math.max(1, canvasWidth);
+	const ch = Math.max(1, canvasHeight);
+	const sw = Math.max(1, sourceWidth);
+	const sh = Math.max(1, sourceHeight);
+	const canvasAspect = cw / ch;
+	const sourceAspect = sw / sh;
+	let requiredWidth = sourceAspect > canvasAspect ? Math.round(ch * sourceAspect) : cw;
+	if (maxTextureSize) {
+		requiredWidth = Math.min(requiredWidth, maxTextureSize);
+	}
+	return { ideal: requiredWidth, max: DEFAULT_INPUT_WIDTH.max };
+}
+
+function getViewportVideoWidthConstraint() {
+	const viewportWidth = Math.max(1, Math.round(window.innerWidth * window.devicePixelRatio));
+	const viewportHeight = Math.max(1, Math.round(window.innerHeight * window.devicePixelRatio));
+	return getVideoWidthConstraint(viewportWidth, viewportHeight, viewportWidth, viewportHeight, null);
+}
 
 let hasCameraPermission = false;
 
@@ -42,7 +62,7 @@ async function reacquireMic() {
 	return false;
 }
 
-async function getCameraStream(existingStream = null, facingMode = 'user', deviceId = null) {
+async function getCameraStream(existingStream = null, facingMode = 'user', deviceId = null, widthConstraint = null) {
 	const video = document.createElement('video');
 	video.autoplay = video.playsInline = video.muted = true;
 
@@ -51,10 +71,9 @@ async function getCameraStream(existingStream = null, facingMode = 'user', devic
 		if (existingStream && existingStream.getVideoTracks().length > 0) {
 			stream = existingStream;
 		} else {
+			const width = widthConstraint || DEFAULT_INPUT_WIDTH;
 			const constraints = {
-				video: deviceId
-					? { deviceId: { exact: deviceId }, width: VIDEO_WIDTH }
-					: { facingMode, width: VIDEO_WIDTH },
+				video: deviceId ? { deviceId: { exact: deviceId }, width } : { facingMode, width },
 			};
 			stream = await navigator.mediaDevices.getUserMedia(constraints);
 		}
@@ -106,6 +125,94 @@ async function main(initialVideoStream = null) {
 	let videoInput = await getCameraStream(initialVideoStream, currentFacingMode);
 	let imageInput = null;
 	let currentVideoUrl = null;
+
+	let textureCanvas = null;
+	let textureCtx = null;
+	let currentMaxTextureSize = null;
+	let preScaledImageSource = null;
+
+	function computeFitCoverSize(srcWidth, srcHeight, targetWidth, targetHeight, maxTextureSize) {
+		const srcAspect = srcWidth / srcHeight;
+		const targetAspect = targetWidth / targetHeight;
+		let fitWidth, fitHeight;
+		if (srcAspect > targetAspect) {
+			fitHeight = targetHeight;
+			fitWidth = Math.round(targetHeight * srcAspect);
+		} else {
+			fitWidth = targetWidth;
+			fitHeight = Math.round(targetWidth / srcAspect);
+		}
+		if (maxTextureSize) {
+			const maxDim = Math.max(fitWidth, fitHeight);
+			if (maxDim > maxTextureSize) {
+				const scale = maxTextureSize / maxDim;
+				fitWidth = Math.round(fitWidth * scale);
+				fitHeight = Math.round(fitHeight * scale);
+			}
+		}
+		return { width: fitWidth, height: fitHeight };
+	}
+
+	function getTextureSize() {
+		const canvasWidth = canvas.width || 1;
+		const canvasHeight = canvas.height || 1;
+		return { canvasWidth, canvasHeight, maxTextureSize: currentMaxTextureSize };
+	}
+
+	function preScaleImage(image) {
+		if (!image) return null;
+		const srcWidth = image.naturalWidth || image.width;
+		const srcHeight = image.naturalHeight || image.height;
+		if (!srcWidth || !srcHeight) return null;
+
+		const { canvasWidth, canvasHeight, maxTextureSize } = getTextureSize();
+		const { width, height } = computeFitCoverSize(srcWidth, srcHeight, canvasWidth, canvasHeight, maxTextureSize);
+
+		const scaledCanvas = document.createElement('canvas');
+		scaledCanvas.width = width;
+		scaledCanvas.height = height;
+		const ctx = scaledCanvas.getContext('2d');
+		ctx.drawImage(image, 0, 0, width, height);
+		return scaledCanvas;
+	}
+
+	function getTextureSource(source) {
+		if (preScaledImageSource && source === imageInput) {
+			return preScaledImageSource;
+		}
+
+		const srcWidth = source.videoWidth || source.naturalWidth || source.width;
+		const srcHeight = source.videoHeight || source.naturalHeight || source.height;
+		if (!srcWidth || !srcHeight) return source;
+
+		const { canvasWidth, canvasHeight, maxTextureSize } = getTextureSize();
+		const { width, height } = computeFitCoverSize(srcWidth, srcHeight, canvasWidth, canvasHeight, maxTextureSize);
+
+		if (srcWidth <= width && srcHeight <= height) {
+			return source;
+		}
+
+		if (!textureCanvas || textureCanvas.width !== width || textureCanvas.height !== height) {
+			textureCanvas = document.createElement('canvas');
+			textureCanvas.width = width;
+			textureCanvas.height = height;
+			textureCtx = textureCanvas.getContext('2d');
+		}
+		textureCtx.drawImage(source, 0, 0, width, height);
+		return textureCanvas;
+	}
+
+	function updatePreScaledImage() {
+		if (imageInput) {
+			preScaledImageSource = preScaleImage(imageInput);
+		}
+	}
+
+	function clearTextureState() {
+		textureCanvas = null;
+		textureCtx = null;
+		preScaledImageSource = null;
+	}
 
 	const audioProblemIndicator = document.getElementById('audio-problem-indicator');
 
@@ -196,9 +303,10 @@ async function main(initialVideoStream = null) {
 			image.onload = () => {
 				removeVideoInput();
 				imageInput = image;
+				preScaledImageSource = preScaleImage(image);
 				play = function play() {
 					shader.play(() => {
-						shader.updateTextures({ u_inputStream: image }); // Silly, but keeps history working.
+						shader.updateTextures({ u_inputStream: preScaledImageSource || image });
 					});
 				};
 				play();
@@ -211,6 +319,7 @@ async function main(initialVideoStream = null) {
 	function handleVideoFile(file) {
 		removeVideoInput();
 		imageInput = null;
+		preScaledImageSource = null;
 
 		const video = document.createElement('video');
 		video.autoplay = video.playsInline = video.muted = video.loop = true;
@@ -223,11 +332,11 @@ async function main(initialVideoStream = null) {
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			play = function play() {
 				shader.play(() => {
-					shader.updateTextures({ u_inputStream: videoInput });
+					shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
 				});
 			};
 			play();
-			shader.updateTextures({ u_inputStream: videoInput });
+			shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
 		};
 	}
 
@@ -361,6 +470,12 @@ async function main(initialVideoStream = null) {
 		}
 	}
 
+	function getVideoConstraint() {
+		const sourceWidth = videoInput?.videoWidth || videoInput?.width || canvas.width;
+		const sourceHeight = videoInput?.videoHeight || videoInput?.height || canvas.height;
+		return getVideoWidthConstraint(canvas.width, canvas.height, sourceWidth, sourceHeight, currentMaxTextureSize);
+	}
+
 	async function flipCamera() {
 		if (imageInput) return;
 		if (videoInput && videoInput.src && !videoInput.srcObject) return;
@@ -372,9 +487,9 @@ async function main(initialVideoStream = null) {
 		currentCameraIndex[newFacingMode] = 0;
 		currentDeviceId = null;
 		try {
-			videoInput = await getCameraStream(null, newFacingMode);
+			videoInput = await getCameraStream(null, newFacingMode, null, getVideoConstraint());
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
-			shader.updateTextures({ u_inputStream: videoInput });
+			shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
 			currentFacingMode = newFacingMode;
 			document.body.classList.toggle('flipped', newFacingMode === 'user');
 			await updateCameraList();
@@ -407,17 +522,17 @@ async function main(initialVideoStream = null) {
 
 		try {
 			removeVideoInput();
-			videoInput = await getCameraStream(null, currentFacingMode, nextCamera.deviceId);
+			videoInput = await getCameraStream(null, currentFacingMode, nextCamera.deviceId, getVideoConstraint());
 			currentDeviceId = nextCamera.deviceId;
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
-			shader.updateTextures({ u_inputStream: videoInput });
+			shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
 		} catch (error) {
 			console.error('Failed to switch to next camera:', error);
 			// Try falling back to facingMode-only constraint
 			try {
-				videoInput = await getCameraStream(null, currentFacingMode);
+				videoInput = await getCameraStream(null, currentFacingMode, null, getVideoConstraint());
 				document.body.appendChild(videoInput);
-				shader.updateTextures({ u_inputStream: videoInput });
+				shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
 			} catch (fallbackError) {
 				console.error('Failed to fallback to facingMode camera:', fallbackError);
 			}
@@ -520,10 +635,20 @@ async function main(initialVideoStream = null) {
 		scene.initialize(wrappedSetShader, canvas, gl);
 		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
 		const textureOptions = scene.history ? { history: scene.history } : undefined;
-		shader.initializeTexture('u_inputStream', videoInput, textureOptions);
+
+		clearTextureState();
+		currentMaxTextureSize = scene.maxTextureSize || null;
+		updatePreScaledImage();
+		shader.on('autosize:resize', () => {
+			updatePreScaledImage();
+		});
+
+		const currentInput = imageInput || videoInput;
+		shader.initializeTexture('u_inputStream', getTextureSource(currentInput), textureOptions);
 		play = function play() {
 			shader.play(() => {
-				shader.updateTextures({ u_inputStream: videoInput });
+				const source = imageInput || videoInput;
+				shader.updateTextures({ u_inputStream: getTextureSource(source) });
 			});
 		};
 		play();
@@ -618,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	splashStart.addEventListener('click', async () => {
 		let stream = null;
-		const videoConstraints = { facingMode: 'user', width: VIDEO_WIDTH };
+		const videoConstraints = { facingMode: 'user', width: getViewportVideoWidthConstraint() };
 		try {
 			stream = await navigator.mediaDevices.getUserMedia({
 				video: videoConstraints,

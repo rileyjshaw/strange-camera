@@ -27,6 +27,7 @@ export default {
 			(FRAMES_PER_DIVISION_MAX - FRAMES_PER_DIVISION_MIN),
 	},
 	history: HISTORY_SIZE,
+	maxTextureSize: 720,
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,

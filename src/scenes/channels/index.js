@@ -25,6 +25,7 @@ export default {
 	controls: [['Number of echoes'], ['Delay per echo']],
 	controlValues: { x1: 0 },
 	history: maxFrameDelay,
+	maxTextureSize: 720,
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save(), autosize()] });
 		shader.initializeUniform('u_nEchoes', 'int', N_ECHOES_INITIAL);

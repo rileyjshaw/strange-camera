@@ -15,6 +15,7 @@ export default {
 	controls: [['Number of rows'], ['Delay per row']],
 	controlValues: { x1: X1_INITIAL, y1: Y1_INITIAL },
 	history: 196,
+	maxTextureSize: 720,
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save(), autosize()] });
 		shader.initializeUniform('x1', 'float', X1_INITIAL);
