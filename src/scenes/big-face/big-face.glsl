@@ -34,7 +34,7 @@ void main() {
 
 		vec2 mouth = vec2(faceLandmark(i, FACE_LANDMARK_MOUTH_CENTER));
 		vec2 mouthZoomed = mouth + (uv - mouth) / mouthScale;
-		vec2 mouthResult = outerMouthAt(mouthZoomed);
+		vec2 mouthResult = mouthAt(mouthZoomed);
 		if (mouthResult.x > 0.0 && int(mouthResult.y) == i) {
 			sampleUv = mouthZoomed;
 		}
