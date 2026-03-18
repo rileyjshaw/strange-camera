@@ -19,5 +19,10 @@
 	"dependencies": {
 		"@mediapipe/tasks-vision": "^0.10.32",
 		"shaderpad": "^1.0.0-beta.63"
+	},
+	"overrides": {
+		"vite-plugin-pwa": {
+			"vite": "$vite"
+		}
 	}
 }
