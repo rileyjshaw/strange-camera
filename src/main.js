@@ -421,7 +421,7 @@ async function main(initialVideoStream = null) {
 			};
 		});
 
-		mediaRecorder.start(1000);
+		mediaRecorder.start();
 
 		recordingStartTime = Date.now();
 		updateRecordingTime();
