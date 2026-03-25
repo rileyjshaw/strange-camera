@@ -53,7 +53,6 @@ function attachControls(scene, handleMove) {
 		}
 		return Math.max(0, Math.min(1, newValue));
 	}
-
 	const touchCleanup = handleTouch(document.body, {
 		onMove(direction, diff, nTouches, initialX, initialY) {
 			if (nTouches > 1) return;

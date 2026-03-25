@@ -12,7 +12,7 @@ const MASK_SPECS = [
 	{
 		key: 'tiled-noise',
 		sizes: [8, 16, 32, 64, 128, 256],
-		generator: size => generateRepeatedFieldRanks(size, 8, (x, y, period) => hashCoord(x, y, period)),
+		generator: generateTiledNoiseRanks,
 	},
 	{ key: 'r-sequence', sizes: [4, 8, 16, 24, 32, 48], generator: generateRSequenceRanks },
 ];
@@ -27,6 +27,17 @@ function compareKeyArrays(a, b) {
 		if (diff !== 0) return diff;
 	}
 	return 0;
+}
+
+function gcd(a, b) {
+	let x = Math.abs(a);
+	let y = Math.abs(b);
+	while (y !== 0) {
+		const next = x % y;
+		x = y;
+		y = next;
+	}
+	return x;
 }
 
 function hashCoord(x, y, seed = 0) {
@@ -134,6 +145,50 @@ function generateRepeatedFieldRanks(size, targetPeriod, valueFn) {
 			const localRank = localRanks[localY * period + localX];
 			const macroRank = macroRanks[macroY * macroCount + macroX];
 			coords.push({ x, y, key: [localRank, macroRank, y, x] });
+		}
+	}
+
+	coords.sort((a, b) => compareKeyArrays(a.key, b.key));
+	return ranksFromSortedCoords(coords, size);
+}
+
+function getTiledNoisePeriod(size) {
+	return Math.max(8, Math.round(size / 2));
+}
+
+function permuteRank(rank, count, seed) {
+	if (count <= 1) return rank;
+	let multiplier = ((seed * 2 + 1) % count + count) % count;
+	if (multiplier === 0) multiplier = 1;
+	while (gcd(multiplier, count) !== 1) {
+		multiplier = (multiplier + 2) % count;
+		if (multiplier === 0) multiplier = 1;
+	}
+	const offset = ((seed * 131) % count + count) % count;
+	return (rank * multiplier + offset) % count;
+}
+
+function generateTiledNoiseRanks(size) {
+	const targetPeriod = getTiledNoisePeriod(size);
+	const macroCount = Math.max(1, Math.round(size / targetPeriod));
+	const period = Math.round(size / macroCount);
+	const localCellCount = period * period;
+	const localRanks = ranksFromSortedCoords(
+		generateRankedField(period, (x, y) => hashCoord(x, y, period)),
+		period
+	);
+	const macroRanks = buildMacroRanks(macroCount);
+	const coords = [];
+
+	for (let y = 0; y < size; y++) {
+		for (let x = 0; x < size; x++) {
+			const macroX = Math.floor(x / period);
+			const macroY = Math.floor(y / period);
+			const localX = x % period;
+			const localY = y % period;
+			const macroSeed = macroRanks[macroY * macroCount + macroX];
+			const localRank = permuteRank(localRanks[localY * period + localX], localCellCount, macroSeed);
+			coords.push({ x, y, key: [localRank, macroSeed, y, x] });
 		}
 	}
 

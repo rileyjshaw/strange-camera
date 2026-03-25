@@ -9,7 +9,7 @@ import maskTiledNoise8 from './masks/tiled-noise-8.webp?url&no-inline';
 import maskTiledNoise16 from './masks/tiled-noise-16.webp?url&no-inline';
 import maskTiledNoise32 from './masks/tiled-noise-32.webp?url&no-inline';
 import maskTiledNoise64 from './masks/tiled-noise-64.webp?url&no-inline';
-import maskTiledNoise128 from './masks/tiled-noise-128.png?url&no-inline';
+import maskTiledNoise128 from './masks/tiled-noise-128.webp?url&no-inline';
 import maskTiledNoise256 from './masks/tiled-noise-256.webp?url&no-inline';
 import maskRSequence4 from './masks/r-sequence-4.webp?url&no-inline';
 import maskRSequence8 from './masks/r-sequence-8.webp?url&no-inline';

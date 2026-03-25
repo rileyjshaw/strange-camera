@@ -25,6 +25,7 @@ const PLACEHOLDER_MASK_TEXTURE = {
 const STRATEGIES = [
 	{ name: 'Bayer', key: 'bayer', maskSizes: [2, 4, 8, 16, 32] },
 	{ name: 'Halftone', key: 'halftone', maskSizes: [4, 8, 12, 16, 20, 24] },
+	{ name: 'Diagonal Lines', key: 'diagonal-lines', maskSizes: [4, 8, 12, 16, 24, 32] },
 	{ name: 'Blue Noise', key: 'blue-noise', maskSizes: PRECOMPUTED_MASKS['blue-noise'].sizes },
 	{ name: 'White Noise', key: 'white-noise', maskSizes: [8, 16, 24, 32, 48, 64] },
 	{ name: 'Tiled Noise', key: 'tiled-noise', maskSizes: PRECOMPUTED_MASKS['tiled-noise'].sizes },
@@ -290,6 +291,16 @@ function buildPeriodicCellRanks(period, shape) {
 			const dx = x + xOffset - center;
 			const dy = y - center;
 			const angle = (Math.atan2(dy, dx) + Math.PI * 2) % (Math.PI * 2);
+			if (shape === 'diagonal-lines') {
+				const lineDistance = Math.abs(dx + dy);
+				const alongLine = dx - dy;
+				coords.push({
+					x,
+					y,
+					key: [lineDistance, Math.abs(alongLine), alongLine, y, x],
+				});
+				continue;
+			}
 			const distance = shape === 'diamond' ? Math.abs(dx) + Math.abs(dy) : Math.hypot(dx, dy) * 0.8;
 			coords.push({ x, y, key: [distance, angle, y, x] });
 		}
@@ -306,7 +317,7 @@ function buildMacroRanks(count) {
 }
 
 function generateRepeatedClusterRanks(size, shape) {
-	const targetPeriod = shape === 'diamond' ? 4 : 8;
+	const targetPeriod = shape === 'diamond' ? 4 : shape === 'diagonal-lines' ? 10 : 8;
 	const macroCount = Math.max(1, Math.round(size / targetPeriod));
 	const period = Math.round(size / macroCount);
 	const localRanks = buildPeriodicCellRanks(period, shape);
@@ -365,6 +376,7 @@ function generateWhiteNoiseRanks(size) {
 const PROCEDURAL_MASK_BUILDERS = {
 	bayer: generateBayerRanks,
 	halftone: size => generateRepeatedClusterRanks(size, 'circle'),
+	'diagonal-lines': size => generateRepeatedClusterRanks(size, 'diagonal-lines'),
 	'white-noise': generateWhiteNoiseRanks,
 	'interleaved-gradient': size =>
 		generateRepeatedFieldRanks(
