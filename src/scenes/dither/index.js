@@ -4,6 +4,8 @@ import save from 'shaderpad/plugins/save';
 import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './dither.glsl';
+import precomputedMasks from './generated-mask-assets.js';
+import { lerp, normalize } from '../util.js';
 
 const CELL_SIZE_MIN = 1;
 const CELL_SIZE_MAX = 32;
@@ -13,15 +15,21 @@ const KNOLL_ERROR_FACTOR = 0.8;
 const KNOLL_ITERATION_MAX = 1024;
 const LUT_AXIS = 12;
 const XYZ_WHITE_D65 = [0.95047, 1.0, 1.08883];
+const PRECOMPUTED_MASKS = precomputedMasks;
+const PLACEHOLDER_MASK_TEXTURE = {
+	data: new Uint8Array([0, 0, 0, 255]),
+	width: 1,
+	height: 1,
+};
 
 const STRATEGIES = [
 	{ name: 'Bayer', key: 'bayer', maskSizes: [2, 4, 8, 16, 32] },
 	{ name: 'Halftone', key: 'halftone', maskSizes: [4, 8, 12, 16, 20, 24] },
-	{ name: 'Blue Noise', key: 'blue-noise', maskSizes: [8, 16, 24, 32, 48, 64] },
+	{ name: 'Blue Noise', key: 'blue-noise', maskSizes: PRECOMPUTED_MASKS['blue-noise'].sizes },
 	{ name: 'White Noise', key: 'white-noise', maskSizes: [8, 16, 24, 32, 48, 64] },
-	{ name: 'Tiled Noise', key: 'tiled-noise', maskSizes: [4, 8, 16, 24, 32, 48] },
+	{ name: 'Tiled Noise', key: 'tiled-noise', maskSizes: PRECOMPUTED_MASKS['tiled-noise'].sizes },
 	{ name: 'IGN', key: 'interleaved-gradient', maskSizes: [4, 8, 16, 24, 32, 48] },
-	{ name: 'R-Sequence', key: 'r-sequence', maskSizes: [4, 8, 16, 24, 32, 48] },
+	{ name: 'R-Sequence', key: 'r-sequence', maskSizes: PRECOMPUTED_MASKS['r-sequence'].sizes },
 	{ name: 'Diamond', key: 'diamond', maskSizes: [2, 4, 6, 8, 12, 16] },
 ];
 
@@ -41,9 +49,9 @@ const PALETTES = [
 ];
 
 const MASK_TEXTURE_OPTIONS = {
-	internalFormat: 'R32F',
-	format: 'RED',
-	type: 'FLOAT',
+	internalFormat: 'RGBA8',
+	format: 'RGBA',
+	type: 'UNSIGNED_BYTE',
 	minFilter: 'NEAREST',
 	magFilter: 'NEAREST',
 	wrapS: 'REPEAT',
@@ -71,7 +79,9 @@ const KNOLL_TEXTURE_OPTIONS = {
 };
 
 const lutLabCache = buildLutLabCache();
-const maskTextureCache = new Map();
+const proceduralMaskCache = new Map();
+const precomputedMaskImageCache = new Map();
+const precomputedMaskPromiseCache = new Map();
 const paletteDescriptorCache = new Map();
 const paletteTextureCache = new Map();
 const knollTextureCache = new Map();
@@ -90,7 +100,7 @@ function controlToIndex(value, count) {
 }
 
 function controlToCellSize(value) {
-	return Math.round(CELL_SIZE_MIN + clamp(value, 0, 1) * (CELL_SIZE_MAX - CELL_SIZE_MIN));
+	return Math.round(lerp(CELL_SIZE_MIN, CELL_SIZE_MAX, clamp(value, 0, 1)));
 }
 
 function getMaskSizes(strategyIndex) {
@@ -136,10 +146,6 @@ function compareKeyArrays(a, b) {
 		if (diff !== 0) return diff;
 	}
 	return 0;
-}
-
-function hashCoord(x, y, seed = 0) {
-	return fract(Math.sin((x + 1) * 127.1 + (y + 1) * 311.7 + seed * 17.13) * 43758.5453123);
 }
 
 function hexToRgbBytes(hex) {
@@ -193,11 +199,50 @@ function getPaletteTexture(paletteIndex) {
 	return paletteTextureCache.get(paletteIndex);
 }
 
-function buildThresholdTextureFromRanks(ranks, size) {
-	const totalCells = size * size;
-	const data = new Float32Array(totalCells);
-	for (let i = 0; i < totalCells; i++) {
-		data[i] = (ranks[i] + 0.5) / totalCells;
+function getPrecomputedMaskUrl(strategyIndex, size) {
+	return PRECOMPUTED_MASKS[STRATEGIES[strategyIndex].key]?.entries[String(size)] ?? null;
+}
+
+function loadPrecomputedMaskImage(url) {
+	if (precomputedMaskImageCache.has(url)) {
+		return Promise.resolve(precomputedMaskImageCache.get(url));
+	}
+	if (precomputedMaskPromiseCache.has(url)) {
+		return precomputedMaskPromiseCache.get(url);
+	}
+
+	const promise = new Promise((resolve, reject) => {
+		const image = new Image();
+		image.decoding = 'async';
+		image.onload = () => {
+			precomputedMaskImageCache.set(url, image);
+			precomputedMaskPromiseCache.delete(url);
+			resolve(image);
+		};
+		image.onerror = () => {
+			precomputedMaskPromiseCache.delete(url);
+			reject(new Error(`Failed to load mask asset: ${url}`));
+		};
+		image.src = url;
+	});
+
+	precomputedMaskPromiseCache.set(url, promise);
+	return promise;
+}
+
+function hashCoord(x, y, seed = 0) {
+	return fract(Math.sin((x + 1) * 127.1 + (y + 1) * 311.7 + seed * 17.13) * 43758.5453123);
+}
+
+function buildPackedMaskTextureFromRanks(ranks, size) {
+	const data = new Uint8Array(size * size * 4);
+	for (let i = 0; i < ranks.length; i++) {
+		const rank = ranks[i];
+		const offset = i * 4;
+		data[offset] = rank & 0xff;
+		data[offset + 1] = (rank >> 8) & 0xff;
+		data[offset + 2] = (rank >> 16) & 0xff;
+		data[offset + 3] = 255;
 	}
 	return { data, width: size, height: size };
 }
@@ -215,27 +260,6 @@ function generateBayerRanks(size) {
 		}
 	}
 	return ranks;
-}
-
-function generateRankedCoords(size, keyFn) {
-	const center = (size - 1) / 2;
-	const coords = [];
-	for (let y = 0; y < size; y++) {
-		for (let x = 0; x < size; x++) {
-			const dx = x - center;
-			const dy = y - center;
-			const angle = (Math.atan2(dy, dx) + Math.PI * 2) % (Math.PI * 2);
-			coords.push({
-				x,
-				y,
-				radius: Math.hypot(dx, dy),
-				manhattan: Math.abs(dx) + Math.abs(dy),
-				angle,
-			});
-		}
-	}
-	coords.sort((a, b) => compareKeyArrays(keyFn(a, size), keyFn(b, size)));
-	return coords;
 }
 
 function generateRankedField(size, valueFn) {
@@ -271,17 +295,13 @@ function buildPeriodicCellRanks(period, shape) {
 		}
 	}
 	coords.sort((a, b) => compareKeyArrays(a.key, b.key));
-	const ranks = new Uint32Array(period * period);
-	coords.forEach((coord, rank) => {
-		ranks[coord.y * period + coord.x] = rank;
-	});
-	return ranks;
+	return ranksFromSortedCoords(coords, period);
 }
 
 function buildMacroRanks(count) {
 	return ranksFromSortedCoords(
 		generateRankedField(count, (x, y) => fract(52.9829189 * fract(0.06711056 * x + 0.00583715 * y))),
-		count
+		count,
 	);
 }
 
@@ -314,7 +334,7 @@ function generateRepeatedFieldRanks(size, targetPeriod, valueFn) {
 	const period = Math.round(size / macroCount);
 	const localRanks = ranksFromSortedCoords(
 		generateRankedField(period, (x, y) => valueFn(x, y, period)),
-		period
+		period,
 	);
 	const macroRanks = buildMacroRanks(macroCount);
 	const coords = [];
@@ -335,155 +355,60 @@ function generateRepeatedFieldRanks(size, targetPeriod, valueFn) {
 	return ranksFromSortedCoords(coords, size);
 }
 
-function generateVoidAndClusterRanks(size) {
-	const total = size * size;
-	const ranks = new Uint32Array(total);
-	const chosen = new Uint8Array(total);
-	const minDistance = new Float32Array(total);
-	minDistance.fill(Infinity);
-
-	let nextIndex = 0;
-	let bestSeed = -1;
-	for (let index = 0; index < total; index++) {
-		const x = index % size;
-		const y = Math.floor(index / size);
-		const score = hashCoord(x, y, size);
-		if (score > bestSeed) {
-			bestSeed = score;
-			nextIndex = index;
-		}
-	}
-
-	for (let rank = 0; rank < total; rank++) {
-		chosen[nextIndex] = 1;
-		ranks[nextIndex] = rank;
-		const chosenX = nextIndex % size;
-		const chosenY = Math.floor(nextIndex / size);
-
-		let bestIndex = -1;
-		let bestScore = -1;
-		for (let index = 0; index < total; index++) {
-			if (chosen[index]) continue;
-			const x = index % size;
-			const y = Math.floor(index / size);
-			let dx = Math.abs(x - chosenX);
-			let dy = Math.abs(y - chosenY);
-			dx = Math.min(dx, size - dx);
-			dy = Math.min(dy, size - dy);
-			const distanceSq = dx * dx + dy * dy;
-			if (distanceSq < minDistance[index]) {
-				minDistance[index] = distanceSq;
-			}
-			const score = minDistance[index] + hashCoord(x, y, size) * 1e-4;
-			if (score > bestScore) {
-				bestScore = score;
-				bestIndex = index;
-			}
-		}
-
-		if (bestIndex >= 0) nextIndex = bestIndex;
-	}
-
-	return ranks;
-}
-
 function generateWhiteNoiseRanks(size) {
 	return ranksFromSortedCoords(
 		generateRankedField(size, (x, y) => hashCoord(x, y, size * 0.61803398875)),
-		size
+		size,
 	);
 }
 
-function generateRSequenceRanks(size) {
-	const total = size * size;
-	const plastic = 1.3247179572447458;
-	const alpha = 1 / plastic;
-	const beta = 1 / (plastic * plastic);
-	const ranks = new Uint32Array(total);
-	const occupied = new Uint8Array(total);
+const PROCEDURAL_MASK_BUILDERS = {
+	bayer: generateBayerRanks,
+	halftone: size => generateRepeatedClusterRanks(size, 'circle'),
+	'white-noise': generateWhiteNoiseRanks,
+	'interleaved-gradient': size =>
+		generateRepeatedFieldRanks(
+			size,
+			8,
+			(x, y) => fract(52.9829189 * fract(0.06711056 * x + 0.00583715 * y)),
+		),
+	diamond: size => generateRepeatedClusterRanks(size, 'diamond'),
+};
 
-	for (let rank = 0; rank < total; rank++) {
-		const targetX = Math.floor(fract(0.5 + (rank + 0.5) * alpha) * size);
-		const targetY = Math.floor(fract(0.5 + (rank + 0.5) * beta) * size);
+function getProceduralMaskTexture(strategyIndex, size) {
+	const key = `${STRATEGIES[strategyIndex].key}:${size}`;
+	if (!proceduralMaskCache.has(key)) {
+		proceduralMaskCache.set(
+			key,
+			buildPackedMaskTextureFromRanks(PROCEDURAL_MASK_BUILDERS[STRATEGIES[strategyIndex].key](size), size),
+		);
+	}
+	return proceduralMaskCache.get(key);
+}
 
-		let bestIndex = -1;
-		let bestDistance = Infinity;
-		let bestTiebreak = Infinity;
+function getMaskStateKey({ strategyIndex, maskSize }) {
+	return `${STRATEGIES[strategyIndex].key}:${maskSize}`;
+}
 
-		for (let index = 0; index < total; index++) {
-			if (occupied[index]) continue;
-			const x = index % size;
-			const y = Math.floor(index / size);
-			let dx = Math.abs(x - targetX);
-			let dy = Math.abs(y - targetY);
-			dx = Math.min(dx, size - dx);
-			dy = Math.min(dy, size - dy);
-			const distanceSq = dx * dx + dy * dy;
-			const tiebreak = hashCoord(x, y, rank);
+function getImmediateMaskTexture(strategyIndex, size) {
+	const url = getPrecomputedMaskUrl(strategyIndex, size);
+	if (!url) return getProceduralMaskTexture(strategyIndex, size);
+	return precomputedMaskImageCache.get(url) ?? PLACEHOLDER_MASK_TEXTURE;
+}
 
-			if (
-				distanceSq < bestDistance ||
-				(distanceSq === bestDistance && tiebreak < bestTiebreak)
-			) {
-				bestDistance = distanceSq;
-				bestTiebreak = tiebreak;
-				bestIndex = index;
+function requestPrecomputedMaskTexture(shader, state) {
+	const url = getPrecomputedMaskUrl(state.strategyIndex, state.maskSize);
+	if (!url) return;
+	const requestedMaskKey = getMaskStateKey(state);
+	loadPrecomputedMaskImage(url)
+		.then(image => {
+			const currentState = shaderStates.get(shader);
+			if (!currentState || getMaskStateKey(currentState) !== requestedMaskKey) {
+				return;
 			}
-		}
-
-		occupied[bestIndex] = 1;
-		ranks[bestIndex] = rank;
-	}
-
-	return ranks;
-}
-
-function buildMaskTexture(strategyIndex, size) {
-	const { key } = STRATEGIES[strategyIndex];
-	let ranks;
-
-	switch (key) {
-		case 'bayer':
-			ranks = generateBayerRanks(size);
-			break;
-		case 'halftone':
-			ranks = generateRepeatedClusterRanks(size, 'circle');
-			break;
-		case 'blue-noise':
-			ranks = generateVoidAndClusterRanks(size);
-			break;
-		case 'white-noise':
-			ranks = generateWhiteNoiseRanks(size);
-			break;
-		case 'tiled-noise':
-			ranks = generateRepeatedFieldRanks(size, 8, (x, y, period) => hashCoord(x, y, period));
-			break;
-		case 'interleaved-gradient':
-			ranks = generateRepeatedFieldRanks(
-				size,
-				8,
-				(x, y) => fract(52.9829189 * fract(0.06711056 * x + 0.00583715 * y))
-			);
-			break;
-		case 'r-sequence':
-			ranks = generateRSequenceRanks(size);
-			break;
-		case 'diamond':
-			ranks = generateRepeatedClusterRanks(size, 'diamond');
-			break;
-		default:
-			throw new Error(`Unknown dither strategy: ${key}`);
-	}
-
-	return buildThresholdTextureFromRanks(ranks, size);
-}
-
-function getMaskTexture(strategyIndex, size) {
-	const key = `${strategyIndex}:${size}`;
-	if (!maskTextureCache.has(key)) {
-		maskTextureCache.set(key, buildMaskTexture(strategyIndex, size));
-	}
-	return maskTextureCache.get(key);
+			shader.updateTextures({ u_mask: image });
+		})
+		.catch(() => {});
 }
 
 function buildLutLabCache() {
@@ -491,13 +416,7 @@ function buildLutLabCache() {
 	for (let blue = 0; blue < LUT_AXIS; blue++) {
 		for (let green = 0; green < LUT_AXIS; green++) {
 			for (let red = 0; red < LUT_AXIS; red++) {
-				values.push(
-					srgbToLab([
-						red / (LUT_AXIS - 1),
-						green / (LUT_AXIS - 1),
-						blue / (LUT_AXIS - 1),
-					])
-				);
+				values.push(srgbToLab([red / (LUT_AXIS - 1), green / (LUT_AXIS - 1), blue / (LUT_AXIS - 1)]));
 			}
 		}
 	}
@@ -551,8 +470,7 @@ function buildKnollTexture(paletteIndex, maskSize) {
 		const rowOffset = row * width;
 		for (let paletteOffset = 0; paletteOffset < paletteSize; paletteOffset++) {
 			cumulative += frequency[paletteOffset] / iterationCount;
-			data[rowOffset + columnBase + paletteOffset] =
-				paletteOffset === paletteSize - 1 ? 1 : cumulative;
+			data[rowOffset + columnBase + paletteOffset] = paletteOffset === paletteSize - 1 ? 1 : cumulative;
 		}
 	}
 
@@ -579,11 +497,7 @@ function getSceneStateFromControls({ x1, x2, y1, y2 }) {
 
 function syncShader(shader, nextState) {
 	const previous = shaderStates.get(shader);
-	if (
-		!previous ||
-		previous.cellSize !== nextState.cellSize ||
-		previous.maskSize !== nextState.maskSize
-	) {
+	if (!previous || previous.cellSize !== nextState.cellSize || previous.maskSize !== nextState.maskSize) {
 		shader.updateUniforms({
 			u_cellSizePx: nextState.cellSize,
 			u_maskSize: nextState.maskSize,
@@ -591,21 +505,14 @@ function syncShader(shader, nextState) {
 	}
 
 	const textureUpdates = {};
-	if (
-		!previous ||
-		previous.strategyIndex !== nextState.strategyIndex ||
-		previous.maskSize !== nextState.maskSize
-	) {
-		textureUpdates.u_mask = getMaskTexture(nextState.strategyIndex, nextState.maskSize);
+	if (!previous || previous.strategyIndex !== nextState.strategyIndex || previous.maskSize !== nextState.maskSize) {
+		textureUpdates.u_mask = getImmediateMaskTexture(nextState.strategyIndex, nextState.maskSize);
+		requestPrecomputedMaskTexture(shader, nextState);
 	}
 	if (!previous || previous.paletteIndex !== nextState.paletteIndex) {
 		textureUpdates.u_palette = getPaletteTexture(nextState.paletteIndex);
 	}
-	if (
-		!previous ||
-		previous.paletteIndex !== nextState.paletteIndex ||
-		previous.maskSize !== nextState.maskSize
-	) {
+	if (!previous || previous.paletteIndex !== nextState.paletteIndex || previous.maskSize !== nextState.maskSize) {
 		textureUpdates.u_knollPlan = getKnollTexture(nextState.paletteIndex, nextState.maskSize);
 	}
 
@@ -623,17 +530,24 @@ const DEFAULT_STATE = {
 	maskSize: MASK_SIZE_INITIAL,
 };
 
+const DEFAULT_STRATEGY_MASK_SIZES = getMaskSizes(DEFAULT_STATE.strategyIndex);
+
 export default {
 	name: 'Dither',
 	hash: 'dither',
-	controls: [['Strategy', 'Palette'], ['Pixel size', 'Mask size']],
+	controls: [
+		['Strategy', 'Palette'],
+		['Pixel size', 'Mask size'],
+	],
 	controlValues: {
 		x1: 0,
 		x2: 0,
-		y1: (CELL_SIZE_INITIAL - CELL_SIZE_MIN) / (CELL_SIZE_MAX - CELL_SIZE_MIN),
-		y2:
-			getMaskSizes(DEFAULT_STATE.strategyIndex).indexOf(MASK_SIZE_INITIAL) /
-			(getMaskSizes(DEFAULT_STATE.strategyIndex).length - 1),
+		y1: normalize(CELL_SIZE_MIN, CELL_SIZE_MAX, CELL_SIZE_INITIAL),
+		y2: normalize(
+			0,
+			DEFAULT_STRATEGY_MASK_SIZES.length - 1,
+			DEFAULT_STRATEGY_MASK_SIZES.indexOf(MASK_SIZE_INITIAL),
+		),
 	},
 	controlModifiers: {
 		x1: { precision: 0.005, loop: true },
@@ -650,20 +564,17 @@ export default {
 		shader.initializeUniform('u_maskSize', 'int', DEFAULT_STATE.maskSize);
 		shader.initializeTexture(
 			'u_mask',
-			getMaskTexture(DEFAULT_STATE.strategyIndex, DEFAULT_STATE.maskSize),
-			MASK_TEXTURE_OPTIONS
+			getImmediateMaskTexture(DEFAULT_STATE.strategyIndex, DEFAULT_STATE.maskSize),
+			MASK_TEXTURE_OPTIONS,
 		);
-		shader.initializeTexture(
-			'u_palette',
-			getPaletteTexture(DEFAULT_STATE.paletteIndex),
-			PALETTE_TEXTURE_OPTIONS
-		);
+		shader.initializeTexture('u_palette', getPaletteTexture(DEFAULT_STATE.paletteIndex), PALETTE_TEXTURE_OPTIONS);
 		shader.initializeTexture(
 			'u_knollPlan',
 			getKnollTexture(DEFAULT_STATE.paletteIndex, DEFAULT_STATE.maskSize),
-			KNOLL_TEXTURE_OPTIONS
+			KNOLL_TEXTURE_OPTIONS,
 		);
 		shaderStates.set(shader, { ...DEFAULT_STATE });
+		requestPrecomputedMaskTexture(shader, DEFAULT_STATE);
 		setShader(shader);
 	},
 	onUpdate(controls, shader) {

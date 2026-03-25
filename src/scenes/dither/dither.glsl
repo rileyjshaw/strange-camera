@@ -18,6 +18,15 @@ vec3 fetchPaletteColor(float index) {
 	return texelFetch(u_palette, ivec2(int(index + 0.5), 0), 0).rgb;
 }
 
+float decodeMaskThreshold(vec2 maskUv, float maskSize) {
+	vec4 packedMask = texture(u_mask, maskUv);
+	float rank =
+		floor(packedMask.r * 255.0 + 0.5) +
+		256.0 * floor(packedMask.g * 255.0 + 0.5) +
+		65536.0 * floor(packedMask.b * 255.0 + 0.5);
+	return (rank + 0.5) / (maskSize * maskSize);
+}
+
 float fetchKnollCumulative(vec3 color, int paletteIndex, int paletteSize) {
 	vec3 snapped = floor(color * float(LUT_AXIS - 1) + 0.5);
 	ivec3 coord = ivec3(clamp(snapped, 0.0, float(LUT_AXIS - 1)));
@@ -37,7 +46,7 @@ void main() {
 	vec3 sourceColor = texture(u_inputStream, sourceUv).rgb;
 
 	vec2 maskUv = (cellCoord + 0.5) / maskSize;
-	float threshold = texture(u_mask, maskUv).r;
+	float threshold = decodeMaskThreshold(maskUv, maskSize);
 	int paletteSize = min(textureSize(u_palette, 0).x, MAX_PALETTE_SIZE);
 
 	float index = 0.0;
