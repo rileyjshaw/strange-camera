@@ -5,6 +5,7 @@ import bodyDouble from './body-double';
 import channels from './channels';
 import cutGlass from './cut-glass';
 import cutup from './cutup';
+import dither from './dither';
 import faceCamo from './face-camo';
 import fill from './fill';
 import fishbowl from './fishbowl';
@@ -27,6 +28,7 @@ const scenes = [
 	channels,
 	cutGlass,
 	cutup,
+	dither,
 	faceCamo,
 	fill,
 	fishbowl,
