@@ -11,8 +11,10 @@ const urlHash = window.location.hash.slice(1);
 let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? Math.floor(Math.random() * scenes.length);
 
 const MAX_EXPORT_DIMENSION = 4096;
+const MAX_RECORDING_DIMENSION = 1280;
 const HOLD_THRESHOLD_MS = 300;
 const DEFAULT_INPUT_WIDTH = { ideal: 1280, max: 1920 };
+const RECORDING_FRAME_RATE = 30;
 
 function getVideoWidthConstraint(canvasWidth, canvasHeight, sourceWidth, sourceHeight, maxTextureSize) {
 	const cw = Math.max(1, canvasWidth);
@@ -32,6 +34,16 @@ function getViewportVideoWidthConstraint() {
 	const viewportWidth = Math.max(1, Math.round(window.innerWidth * window.devicePixelRatio));
 	const viewportHeight = Math.max(1, Math.round(window.innerHeight * window.devicePixelRatio));
 	return getVideoWidthConstraint(viewportWidth, viewportHeight, viewportWidth, viewportHeight, null);
+}
+
+function getMaxDimensionSize(width, height, maxDimension) {
+	const safeWidth = Math.max(1, width);
+	const safeHeight = Math.max(1, height);
+	const scale = Math.min(1, maxDimension / Math.max(safeWidth, safeHeight));
+	return {
+		width: Math.max(1, Math.round(safeWidth * scale)),
+		height: Math.max(1, Math.round(safeHeight * scale)),
+	};
 }
 
 let hasCameraPermission = false;
@@ -220,6 +232,7 @@ async function main(initialVideoStream = null) {
 	let mediaRecorder = null;
 	let recordingStartTime = null;
 	let recordingTimerInterval = null;
+	let cleanupRecordingCanvasCapture = null;
 	const recordingTimeEl = document.querySelector('.recording-time');
 
 	let play;
@@ -377,6 +390,74 @@ async function main(initialVideoStream = null) {
 	}
 
 	let stopRecordingPromise = null;
+
+	function resetRecordingState() {
+		isRecording = false;
+		document.body.classList.remove('recording');
+		mediaRecorder = null;
+		audioProblemIndicator.style.display = 'none';
+
+		clearInterval(recordingTimerInterval);
+		recordingTimerInterval = null;
+		recordingStartTime = null;
+		recordingTimeEl.textContent = '0:00';
+	}
+
+	function stopCanvasRecordingCapture() {
+		cleanupRecordingCanvasCapture?.();
+		cleanupRecordingCanvasCapture = null;
+	}
+
+	function createCanvasRecordingCapture() {
+		const recordingCanvas = document.createElement('canvas');
+		const recordingCtx = recordingCanvas.getContext('2d', { alpha: false });
+		if (!recordingCtx) {
+			throw new Error('Unable to create a recording canvas context.');
+		}
+
+		function syncRecordingCanvas() {
+			const { width, height } = getMaxDimensionSize(canvas.width, canvas.height, MAX_RECORDING_DIMENSION);
+			if (recordingCanvas.width !== width || recordingCanvas.height !== height) {
+				recordingCanvas.width = width;
+				recordingCanvas.height = height;
+			}
+			recordingCtx.drawImage(canvas, 0, 0, width, height);
+		}
+
+		syncRecordingCanvas();
+		let canvasStream = recordingCanvas.captureStream(0);
+		let canvasTrack = canvasStream.getVideoTracks()[0];
+		const supportsManualFrameRequests = typeof canvasTrack?.requestFrame === 'function';
+
+		if (!supportsManualFrameRequests) {
+			canvasStream.getTracks().forEach(track => track.stop());
+			canvasStream = recordingCanvas.captureStream(RECORDING_FRAME_RATE);
+			canvasTrack = canvasStream.getVideoTracks()[0];
+		}
+
+		if (!canvasTrack) {
+			throw new Error('Unable to capture a canvas video track.');
+		}
+
+		const activeShader = shader;
+		const requestFrame = typeof canvasTrack.requestFrame === 'function' ? () => canvasTrack.requestFrame() : null;
+		const handleAfterDraw = () => {
+			syncRecordingCanvas();
+			requestFrame?.();
+		};
+
+		activeShader.on('afterDraw', handleAfterDraw);
+		handleAfterDraw();
+
+		return {
+			canvasTrack,
+			cleanup() {
+				activeShader.off('afterDraw', handleAfterDraw);
+				canvasStream.getTracks().forEach(track => track.stop());
+			},
+		};
+	}
+
 	async function startRecording() {
 		if (isRecording) return;
 
@@ -392,40 +473,51 @@ async function main(initialVideoStream = null) {
 		const sceneName = scenes[currentSceneIndex].name;
 		window.posthog?.capture('start_recording', { scene: sceneName });
 
-		const canvasStream = canvas.captureStream(30);
-		const tracks = [...canvasStream.getVideoTracks()];
-		if (checkMicHealth() && sessionAudioTrack) {
-			tracks.push(sessionAudioTrack);
-		}
-		const combinedStream = new MediaStream(tracks);
+		try {
+			const { canvasTrack, cleanup } = createCanvasRecordingCapture();
+			cleanupRecordingCanvasCapture = cleanup;
 
-		const mimeTypePreference = ['video/mp4', 'video/webm'];
-		let mimeType = mimeTypePreference.find(type => MediaRecorder.isTypeSupported(type)) || '';
-
-		mediaRecorder = new MediaRecorder(combinedStream, {
-			mimeType,
-			videoBitsPerSecond: 2_500_000,
-			audioBitsPerSecond: 128_000,
-		});
-
-		const recordedChunks = [];
-		mediaRecorder.ondataavailable = event => {
-			if (event.data.size > 0) {
-				recordedChunks.push(event.data);
+			const tracks = [canvasTrack];
+			if (checkMicHealth() && sessionAudioTrack) {
+				tracks.push(sessionAudioTrack);
 			}
-		};
+			const combinedStream = new MediaStream(tracks);
 
-		stopRecordingPromise = new Promise(resolve => {
-			mediaRecorder.onstop = () => {
-				resolve(recordedChunks);
+			const mimeTypePreference = ['video/mp4', 'video/webm'];
+			let mimeType = mimeTypePreference.find(type => MediaRecorder.isTypeSupported(type)) || '';
+
+			mediaRecorder = new MediaRecorder(combinedStream, {
+				mimeType,
+				videoBitsPerSecond: 2_500_000,
+				audioBitsPerSecond: 128_000,
+			});
+
+			const recordedChunks = [];
+			mediaRecorder.ondataavailable = event => {
+				if (event.data.size > 0) {
+					recordedChunks.push(event.data);
+				}
 			};
-		});
+			mediaRecorder.onerror = event => {
+				console.error('MediaRecorder error:', event.error || event);
+			};
 
-		mediaRecorder.start();
+			stopRecordingPromise = new Promise(resolve => {
+				mediaRecorder.onstop = () => {
+					resolve(recordedChunks);
+				};
+			});
 
-		recordingStartTime = Date.now();
-		updateRecordingTime();
-		recordingTimerInterval = setInterval(updateRecordingTime, 250);
+			mediaRecorder.start();
+
+			recordingStartTime = Date.now();
+			updateRecordingTime();
+			recordingTimerInterval = setInterval(updateRecordingTime, 250);
+		} catch (error) {
+			stopCanvasRecordingCapture();
+			console.error('Failed to start recording:', error);
+			resetRecordingState();
+		}
 	}
 
 	function updateRecordingTime() {
@@ -444,6 +536,7 @@ async function main(initialVideoStream = null) {
 
 		mediaRecorder.stop();
 		const recordedChunks = await stopRecordingPromise;
+		stopCanvasRecordingCapture();
 		if (recordedChunks.length) {
 			const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
 			const extension = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
@@ -453,15 +546,7 @@ async function main(initialVideoStream = null) {
 			});
 		}
 
-		isRecording = false;
-		document.body.classList.remove('recording');
-		mediaRecorder = null;
-		audioProblemIndicator.style.display = 'none';
-
-		clearInterval(recordingTimerInterval);
-		recordingTimerInterval = null;
-		recordingStartTime = null;
-		recordingTimeEl.textContent = '0:00';
+		resetRecordingState();
 	}
 
 	function stopWebcamStream() {
