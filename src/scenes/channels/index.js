@@ -1,6 +1,5 @@
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
-import save from 'shaderpad/plugins/save';
 import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './channels.glsl';
@@ -27,7 +26,7 @@ export default {
 	history: maxFrameDelay,
 	maxTextureSize: 720,
 	initialize(setShader, canvas) {
-		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save(), autosize()] });
+		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), autosize()] });
 		shader.initializeUniform('u_nEchoes', 'int', N_ECHOES_INITIAL);
 		shader.initializeUniform('u_frameDelayPerEcho', 'int', FRAME_DELAY_PER_ECHO_INITIAL);
 		shader.initializeUniform('u_dimmingFactor', 'float', getDimmingFactor(N_ECHOES_INITIAL));

@@ -1,7 +1,6 @@
 import ShaderPad from 'shaderpad';
 import segmenter from 'shaderpad/plugins/segmenter';
 import helpers from 'shaderpad/plugins/helpers';
-import save from 'shaderpad/plugins/save';
 import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './fill.glsl';
@@ -37,7 +36,6 @@ export default {
 			canvas,
 			plugins: [
 				helpers(),
-				save(),
 				autosize(),
 				segmenter({
 					textureName: 'u_inputStream',

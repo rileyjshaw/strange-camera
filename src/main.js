@@ -2,6 +2,7 @@ import handleTouch from './handleTouch';
 import attachControls from './controls';
 import saveVideo from './saveVideo';
 import scenes, { sceneHashToIndex } from './scenes';
+import { save } from 'shaderpad/util';
 
 function updateUrlHash(scene) {
 	window.location.hash = scene.hash;
@@ -378,7 +379,7 @@ async function main(initialVideoStream = null) {
 			gl.viewport(0, 0, exportWidth, exportHeight);
 			shader.draw();
 		}
-		await shader.save(`Strange Camera - ${sceneName}`, window.location.href, {
+		await save(shader, `Strange Camera - ${sceneName}`, window.location.href, {
 			preventShare: e.pointerType === 'mouse',
 		});
 		if (needsResize) {

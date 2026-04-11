@@ -1,7 +1,6 @@
 import ShaderPad from 'shaderpad';
 import face from 'shaderpad/plugins/face';
 import helpers from 'shaderpad/plugins/helpers';
-import save from 'shaderpad/plugins/save';
 import autosize from 'shaderpad/plugins/autosize';
 import { FaceLandmarker } from '@mediapipe/tasks-vision';
 
@@ -85,7 +84,6 @@ export default {
 			canvas,
 			plugins: [
 				helpers(),
-				save(),
 				autosize(),
 				face({
 					textureName: 'u_inputStream',

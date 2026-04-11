@@ -1,7 +1,6 @@
 // Inspo: https://timewiggler.com/
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
-import save from 'shaderpad/plugins/save';
 import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './wiggle y.glsl';
@@ -17,7 +16,7 @@ export default {
 	history: 196,
 	maxTextureSize: 720,
 	initialize(setShader, canvas) {
-		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), save(), autosize()] });
+		const shader = new ShaderPad(fragmentShaderSrc, { canvas, plugins: [helpers(), autosize()] });
 		shader.initializeUniform('x1', 'float', X1_INITIAL);
 		shader.initializeUniform('y1', 'float', Y1_INITIAL);
 		setShader(shader);

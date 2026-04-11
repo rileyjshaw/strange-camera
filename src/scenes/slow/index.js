@@ -1,6 +1,5 @@
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
-import save from 'shaderpad/plugins/save';
 import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './slow.glsl';
@@ -31,7 +30,7 @@ export default {
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,
-			plugins: [helpers(), save(), autosize()],
+			plugins: [helpers(), autosize()],
 		});
 		shader.initializeUniform('u_divisions', 'int', DIVISIONS_INITIAL);
 		shader.initializeUniform('u_framesPerDivision', 'int', FRAMES_PER_DIVISION_INITIAL);

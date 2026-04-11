@@ -1,7 +1,6 @@
 import ShaderPad from 'shaderpad';
 import segmenter from 'shaderpad/plugins/segmenter';
 import helpers from 'shaderpad/plugins/helpers';
-import save from 'shaderpad/plugins/save';
 import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './blurryface.glsl';
@@ -82,7 +81,6 @@ export default {
 			canvas,
 			plugins: [
 				helpers(),
-				save(),
 				autosize(),
 				segmenter({
 					textureName: 'u_inputStream',
@@ -114,9 +112,9 @@ export default {
 				mainShader.initializeTexture(name, source, opts);
 				downShaders[0].initializeTexture('u_input', source);
 			},
-			updateTextures(updates, opts) {
+			updateTextures(updates) {
 				if (updates && updates.u_inputStream) currentInput = updates.u_inputStream;
-				mainShader.updateTextures(updates, opts);
+				mainShader.updateTextures(updates);
 			},
 			updateUniforms(u) {
 				mainShader.updateUniforms({ u_mode: u.u_mode });
@@ -154,9 +152,6 @@ export default {
 			},
 			draw() {
 				mainShader.draw(...arguments);
-			},
-			save() {
-				mainShader.save(...arguments);
 			},
 			on() {
 				mainShader.on(...arguments);
