@@ -32,6 +32,19 @@ const PIXEL_POWER_MIN = 1;
 const PIXEL_POWER_MAX = 8;
 const PIXEL_POWER_INITIAL = 1;
 
+const SCORE_UNIFORMS = new Set([
+	'u_heuristic',
+	'u_sortAngle',
+	'u_threshold',
+	'u_pixelSize',
+	'u_lookDist',
+	'u_activeCellsX',
+	'u_activeCellsY',
+]);
+const PROPOSAL_UNIFORMS = new Set(['u_heuristic', 'u_pixelSize', 'u_lookDist', 'u_activeCellsX', 'u_activeCellsY']);
+const ACCEPT_UNIFORMS = new Set(['u_pixelSize', 'u_lookDist', 'u_activeCellsX', 'u_activeCellsY']);
+const POSITION_UNIFORMS = new Set(['u_pixelSize', 'u_lookDist', 'u_activeCellsX', 'u_activeCellsY']);
+
 let scoreShader, proposalShader, acceptShader, positionShader, outputShader;
 let currentInput = null;
 let iterations = ITERATIONS_INITIAL;
@@ -46,7 +59,7 @@ function withSortedHelpers(shaderSource) {
 	const firstLineBreakIdx = shaderSource.indexOf('\n');
 	if (firstLineBreakIdx < 0) return `${shaderSource}\n${helperShaderSrc}`;
 	return `${shaderSource.slice(0, firstLineBreakIdx + 1)}\n${helperShaderSrc}\n${shaderSource.slice(
-		firstLineBreakIdx + 1
+		firstLineBreakIdx + 1,
 	)}`;
 }
 
@@ -55,6 +68,18 @@ function getActiveCells(width, height, nextPixelSize) {
 		x: Math.max(0, Math.floor(width / nextPixelSize)),
 		y: Math.max(0, Math.floor(height / nextPixelSize)),
 	};
+}
+
+function updateUniformSubset(shader, updates, allowedUniforms) {
+	let shouldUpdate = false;
+	const nextUpdates = Object.entries(updates).reduce((subset, [uniformName, value]) => {
+		if (allowedUniforms.has(uniformName)) {
+			subset[uniformName] = value;
+			shouldUpdate = true;
+		}
+		return subset;
+	}, {});
+	if (shouldUpdate) shader.updateUniforms(nextUpdates);
 }
 
 export default {
@@ -136,7 +161,6 @@ export default {
 
 		scoreShader.initializeUniform('u_heuristic', 'float', HEURISTIC_INITIAL);
 		proposalShader.initializeUniform('u_heuristic', 'float', HEURISTIC_INITIAL);
-		positionShader.initializeUniform('u_heuristic', 'float', HEURISTIC_INITIAL);
 		scoreShader.initializeUniform('u_sortAngle', 'float', ANGLE_INITIAL);
 		scoreShader.initializeUniform('u_threshold', 'float', THRESHOLD_INITIAL);
 
@@ -214,11 +238,10 @@ export default {
 				}
 			},
 			updateUniforms(updates) {
-				scoreShader.updateUniforms(updates);
-				proposalShader.updateUniforms(updates);
-				acceptShader.updateUniforms(updates);
-				positionShader.updateUniforms(updates);
-				outputShader.updateUniforms(updates);
+				updateUniformSubset(scoreShader, updates, SCORE_UNIFORMS);
+				updateUniformSubset(proposalShader, updates, PROPOSAL_UNIFORMS);
+				updateUniformSubset(acceptShader, updates, ACCEPT_UNIFORMS);
+				updateUniformSubset(positionShader, updates, POSITION_UNIFORMS);
 			},
 			play(cb) {
 				outputShader.play(() => {

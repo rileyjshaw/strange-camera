@@ -14,7 +14,6 @@ uniform int u_historyFrameOffset;
 uniform int u_frame;
 uniform int u_pixelSize;
 uniform int u_lookDist;
-uniform float u_heuristic;
 uniform int u_activeCellsX;
 uniform int u_activeCellsY;
 
