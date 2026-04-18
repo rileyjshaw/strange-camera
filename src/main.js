@@ -234,6 +234,7 @@ async function main(initialVideoStream = null) {
 	let recordingStartTime = null;
 	let recordingTimerInterval = null;
 	let cleanupRecordingCanvasCapture = null;
+	let restoreRecordingRenderSize = null;
 	const recordingTimeEl = document.querySelector('.recording-time');
 
 	let play;
@@ -374,25 +375,52 @@ async function main(initialVideoStream = null) {
 				exportHeight = MAX_EXPORT_DIMENSION;
 				exportWidth = Math.round(MAX_EXPORT_DIMENSION * aspectRatio);
 			}
-			shader.canvas.width = exportWidth;
-			shader.canvas.height = exportHeight;
-			gl.viewport(0, 0, exportWidth, exportHeight);
+			setRenderCanvasSize(exportWidth, exportHeight);
 			shader.draw();
 		}
 		await save(shader, `Strange Camera - ${sceneName}`, window.location.href, {
 			preventShare: e.pointerType === 'mouse',
 		});
 		if (needsResize) {
-			shader.canvas.width = canvasWidth;
-			shader.canvas.height = canvasHeight;
-			gl.viewport(0, 0, canvasWidth, canvasHeight);
+			setRenderCanvasSize(canvasWidth, canvasHeight);
 		}
 		play();
 	}
 
 	let stopRecordingPromise = null;
 
+	function setRenderCanvasSize(width, height) {
+		if (shader.canvas.width === width && shader.canvas.height === height) return;
+		shader.canvas.width = width;
+		shader.canvas.height = height;
+		gl.viewport(0, 0, width, height);
+		updatePreScaledImage();
+	}
+
+	function startRecordingRenderMode() {
+		if (restoreRecordingRenderSize) return;
+
+		restoreRecordingRenderSize = {
+			width: shader.canvas.width,
+			height: shader.canvas.height,
+		};
+		const { width, height } = getMaxDimensionSize(
+			restoreRecordingRenderSize.width,
+			restoreRecordingRenderSize.height,
+			MAX_RECORDING_DIMENSION
+		);
+		setRenderCanvasSize(width, height);
+	}
+
+	function stopRecordingRenderMode() {
+		if (!restoreRecordingRenderSize) return;
+		const { width, height } = restoreRecordingRenderSize;
+		restoreRecordingRenderSize = null;
+		setRenderCanvasSize(width, height);
+	}
+
 	function resetRecordingState() {
+		stopRecordingRenderMode();
 		isRecording = false;
 		document.body.classList.remove('recording');
 		mediaRecorder = null;
@@ -410,29 +438,13 @@ async function main(initialVideoStream = null) {
 	}
 
 	function createCanvasRecordingCapture() {
-		const recordingCanvas = document.createElement('canvas');
-		const recordingCtx = recordingCanvas.getContext('2d', { alpha: false });
-		if (!recordingCtx) {
-			throw new Error('Unable to create a recording canvas context.');
-		}
-
-		function syncRecordingCanvas() {
-			const { width, height } = getMaxDimensionSize(canvas.width, canvas.height, MAX_RECORDING_DIMENSION);
-			if (recordingCanvas.width !== width || recordingCanvas.height !== height) {
-				recordingCanvas.width = width;
-				recordingCanvas.height = height;
-			}
-			recordingCtx.drawImage(canvas, 0, 0, width, height);
-		}
-
-		syncRecordingCanvas();
-		let canvasStream = recordingCanvas.captureStream(0);
+		let canvasStream = canvas.captureStream(0);
 		let canvasTrack = canvasStream.getVideoTracks()[0];
 		const supportsManualFrameRequests = typeof canvasTrack?.requestFrame === 'function';
 
 		if (!supportsManualFrameRequests) {
 			canvasStream.getTracks().forEach(track => track.stop());
-			canvasStream = recordingCanvas.captureStream(RECORDING_FRAME_RATE);
+			canvasStream = canvas.captureStream(RECORDING_FRAME_RATE);
 			canvasTrack = canvasStream.getVideoTracks()[0];
 		}
 
@@ -442,13 +454,9 @@ async function main(initialVideoStream = null) {
 
 		const activeShader = shader;
 		const requestFrame = typeof canvasTrack.requestFrame === 'function' ? () => canvasTrack.requestFrame() : null;
-		const handleAfterDraw = () => {
-			syncRecordingCanvas();
-			requestFrame?.();
-		};
+		const handleAfterDraw = () => requestFrame?.();
 
 		activeShader.on('afterDraw', handleAfterDraw);
-		handleAfterDraw();
 
 		return {
 			canvasTrack,
@@ -475,6 +483,7 @@ async function main(initialVideoStream = null) {
 		window.posthog?.capture('start_recording', { scene: sceneName });
 
 		try {
+			startRecordingRenderMode();
 			const { canvasTrack, cleanup } = createCanvasRecordingCapture();
 			cleanupRecordingCanvasCapture = cleanup;
 
