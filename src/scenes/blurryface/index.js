@@ -156,6 +156,9 @@ export default {
 			on() {
 				mainShader.on(...arguments);
 			},
+			off() {
+				mainShader.off(...arguments);
+			},
 			get canvas() {
 				return mainShader.canvas;
 			},

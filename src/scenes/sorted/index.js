@@ -297,6 +297,9 @@ export default {
 			on() {
 				outputShader.on(...arguments);
 			},
+			off() {
+				outputShader.off(...arguments);
+			},
 			get canvas() {
 				return outputShader.canvas;
 			},
