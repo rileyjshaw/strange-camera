@@ -1,7 +1,6 @@
 import ShaderPad from 'shaderpad';
 import segmenter from 'shaderpad/plugins/segmenter';
 import helpers from 'shaderpad/plugins/helpers';
-import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './blurryface.glsl';
 import kawaseDownSrc from './kawase-down.glsl';
@@ -81,7 +80,6 @@ export default {
 			canvas,
 			plugins: [
 				helpers(),
-				autosize(),
 				segmenter({
 					textureName: 'u_inputStream',
 					options: { history: MASK_HISTORY },
@@ -158,6 +156,9 @@ export default {
 			},
 			off() {
 				mainShader.off(...arguments);
+			},
+			resize(width, height) {
+				mainShader.emit('autosize:resize', width, height);
 			},
 			get canvas() {
 				return mainShader.canvas;

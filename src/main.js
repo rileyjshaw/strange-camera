@@ -3,6 +3,16 @@ import attachControls from './controls';
 import saveVideo from './saveVideo';
 import scenes, { sceneHashToIndex } from './scenes';
 import { save } from 'shaderpad/util';
+import {
+	BufferTarget,
+	CanvasSource,
+	MediaStreamAudioTrackSource,
+	Mp4OutputFormat,
+	Output,
+	WebMOutputFormat,
+	getFirstEncodableAudioCodec,
+	getFirstEncodableVideoCodec,
+} from 'mediabunny';
 
 function updateUrlHash(scene) {
 	window.location.hash = scene.hash;
@@ -11,31 +21,17 @@ function updateUrlHash(scene) {
 const urlHash = window.location.hash.slice(1);
 let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? Math.floor(Math.random() * scenes.length);
 
-const MAX_EXPORT_DIMENSION = 4096;
-const MAX_RECORDING_DIMENSION = 1280;
+const TARGET_CAMERA_WIDTH = 1280;
+const TARGET_CAMERA_HEIGHT = 720;
+const MAX_CANVAS_DIMENSION = 1280;
 const HOLD_THRESHOLD_MS = 300;
-const DEFAULT_INPUT_WIDTH = { ideal: 1280, max: 1920 };
 const RECORDING_FRAME_RATE = 30;
-
-function getVideoWidthConstraint(canvasWidth, canvasHeight, sourceWidth, sourceHeight, maxTextureSize) {
-	const cw = Math.max(1, canvasWidth);
-	const ch = Math.max(1, canvasHeight);
-	const sw = Math.max(1, sourceWidth);
-	const sh = Math.max(1, sourceHeight);
-	const canvasAspect = cw / ch;
-	const sourceAspect = sw / sh;
-	let requiredWidth = sourceAspect > canvasAspect ? Math.round(ch * sourceAspect) : cw;
-	if (maxTextureSize) {
-		requiredWidth = Math.min(requiredWidth, maxTextureSize);
-	}
-	return { ideal: requiredWidth, max: DEFAULT_INPUT_WIDTH.max };
-}
-
-function getViewportVideoWidthConstraint() {
-	const viewportWidth = Math.max(1, Math.round(window.innerWidth * window.devicePixelRatio));
-	const viewportHeight = Math.max(1, Math.round(window.innerHeight * window.devicePixelRatio));
-	return getVideoWidthConstraint(viewportWidth, viewportHeight, viewportWidth, viewportHeight, null);
-}
+const RECORDING_VIDEO_BITRATE = 2_500_000;
+const RECORDING_AUDIO_BITRATE = 128_000;
+const DEFAULT_CAMERA_CONSTRAINTS = {
+	width: { ideal: TARGET_CAMERA_WIDTH },
+	height: { ideal: TARGET_CAMERA_HEIGHT },
+};
 
 function getMaxDimensionSize(width, height, maxDimension) {
 	const safeWidth = Math.max(1, width);
@@ -50,6 +46,7 @@ function getMaxDimensionSize(width, height, maxDimension) {
 let hasCameraPermission = false;
 
 let sessionAudioTrack = null;
+let aacEncoderRegistrationPromise = null;
 
 function checkMicHealth() {
 	if (!sessionAudioTrack) return false;
@@ -75,7 +72,7 @@ async function reacquireMic() {
 	return false;
 }
 
-async function getCameraStream(existingStream = null, facingMode = 'user', deviceId = null, widthConstraint = null) {
+async function getCameraStream(existingStream = null, facingMode = 'user', deviceId = null) {
 	const video = document.createElement('video');
 	video.autoplay = video.playsInline = video.muted = true;
 
@@ -84,9 +81,10 @@ async function getCameraStream(existingStream = null, facingMode = 'user', devic
 		if (existingStream && existingStream.getVideoTracks().length > 0) {
 			stream = existingStream;
 		} else {
-			const width = widthConstraint || DEFAULT_INPUT_WIDTH;
 			const constraints = {
-				video: deviceId ? { deviceId: { exact: deviceId }, width } : { facingMode, width },
+				video: deviceId
+					? { deviceId: { exact: deviceId }, ...DEFAULT_CAMERA_CONSTRAINTS }
+					: { facingMode, ...DEFAULT_CAMERA_CONSTRAINTS },
 			};
 			stream = await navigator.mediaDevices.getUserMedia(constraints);
 		}
@@ -139,102 +137,19 @@ async function main(initialVideoStream = null) {
 	let imageInput = null;
 	let currentVideoUrl = null;
 
-	let textureCanvas = null;
-	let textureCtx = null;
-	let currentMaxTextureSize = null;
-	let preScaledImageSource = null;
-
-	function computeFitCoverSize(srcWidth, srcHeight, targetWidth, targetHeight, maxTextureSize) {
-		const srcAspect = srcWidth / srcHeight;
-		const targetAspect = targetWidth / targetHeight;
-		let fitWidth, fitHeight;
-		if (srcAspect > targetAspect) {
-			fitHeight = targetHeight;
-			fitWidth = Math.round(targetHeight * srcAspect);
-		} else {
-			fitWidth = targetWidth;
-			fitHeight = Math.round(targetWidth / srcAspect);
-		}
-		if (maxTextureSize) {
-			const maxDim = Math.max(fitWidth, fitHeight);
-			if (maxDim > maxTextureSize) {
-				const scale = maxTextureSize / maxDim;
-				fitWidth = Math.round(fitWidth * scale);
-				fitHeight = Math.round(fitHeight * scale);
-			}
-		}
-		return { width: fitWidth, height: fitHeight };
-	}
-
-	function getTextureSize() {
-		const canvasWidth = canvas.width || 1;
-		const canvasHeight = canvas.height || 1;
-		return { canvasWidth, canvasHeight, maxTextureSize: currentMaxTextureSize };
-	}
-
-	function preScaleImage(image) {
-		if (!image) return null;
-		const srcWidth = image.naturalWidth || image.width;
-		const srcHeight = image.naturalHeight || image.height;
-		if (!srcWidth || !srcHeight) return null;
-
-		const { canvasWidth, canvasHeight, maxTextureSize } = getTextureSize();
-		const { width, height } = computeFitCoverSize(srcWidth, srcHeight, canvasWidth, canvasHeight, maxTextureSize);
-
-		const scaledCanvas = document.createElement('canvas');
-		scaledCanvas.width = width;
-		scaledCanvas.height = height;
-		const ctx = scaledCanvas.getContext('2d');
-		ctx.drawImage(image, 0, 0, width, height);
-		return scaledCanvas;
-	}
-
-	function getTextureSource(source) {
-		if (preScaledImageSource && source === imageInput) {
-			return preScaledImageSource;
-		}
-
-		const srcWidth = source.videoWidth || source.naturalWidth || source.width;
-		const srcHeight = source.videoHeight || source.naturalHeight || source.height;
-		if (!srcWidth || !srcHeight) return source;
-
-		const { canvasWidth, canvasHeight, maxTextureSize } = getTextureSize();
-		const { width, height } = computeFitCoverSize(srcWidth, srcHeight, canvasWidth, canvasHeight, maxTextureSize);
-
-		if (srcWidth <= width && srcHeight <= height) {
-			return source;
-		}
-
-		if (!textureCanvas || textureCanvas.width !== width || textureCanvas.height !== height) {
-			textureCanvas = document.createElement('canvas');
-			textureCanvas.width = width;
-			textureCanvas.height = height;
-			textureCtx = textureCanvas.getContext('2d');
-		}
-		textureCtx.drawImage(source, 0, 0, width, height);
-		return textureCanvas;
-	}
-
-	function updatePreScaledImage() {
-		if (imageInput) {
-			preScaledImageSource = preScaleImage(imageInput);
-		}
-	}
-
-	function clearTextureState() {
-		textureCanvas = null;
-		textureCtx = null;
-		preScaledImageSource = null;
-	}
-
 	const audioProblemIndicator = document.getElementById('audio-problem-indicator');
+	const recordLockEl = document.getElementById('record-lock');
 
 	let isRecording = false;
-	let mediaRecorder = null;
+	let isRecordLocked = false;
+	let recordingOutput = null;
+	let recordingVideoSource = null;
+	let recordingAudioSource = null;
+	let recordingStartPromise = null;
 	let recordingStartTime = null;
 	let recordingTimerInterval = null;
-	let cleanupRecordingCanvasCapture = null;
-	let restoreRecordingRenderSize = null;
+	let cleanupRecordingFrameCapture = null;
+	let recordingFrameState = null;
 	const recordingTimeEl = document.querySelector('.recording-time');
 
 	let play;
@@ -244,6 +159,24 @@ async function main(initialVideoStream = null) {
 	const titleEl = document.getElementById('title');
 	const canvas = document.querySelector('canvas');
 	const gl = canvas.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
+
+	function getSourceDimensions(source) {
+		if (!source) return null;
+		const width = source.videoWidth || source.naturalWidth || source.width || 0;
+		const height = source.videoHeight || source.naturalHeight || source.height || 0;
+		if (!width || !height) return null;
+		return { width, height };
+	}
+
+	function getCanvasMaxDimension(scene = scenes[currentSceneIndex]) {
+		return Math.min(MAX_CANVAS_DIMENSION, scene?.maxTextureSize ?? MAX_CANVAS_DIMENSION);
+	}
+
+	function getRenderCanvasSizeForSource(source, scene = scenes[currentSceneIndex]) {
+		const dimensions = getSourceDimensions(source);
+		if (!dimensions) return null;
+		return getMaxDimensionSize(dimensions.width, dimensions.height, getCanvasMaxDimension(scene));
+	}
 
 	const shutterButton = document.querySelector('#shutter');
 	const openMenuButton = document.querySelector('#open-menu');
@@ -318,10 +251,10 @@ async function main(initialVideoStream = null) {
 			image.onload = () => {
 				removeVideoInput();
 				imageInput = image;
-				preScaledImageSource = preScaleImage(image);
+				syncRenderCanvasToSource(image);
 				play = function play() {
 					shader.play(() => {
-						shader.updateTextures({ u_inputStream: preScaledImageSource || image });
+						shader.updateTextures({ u_inputStream: image });
 					});
 				};
 				play();
@@ -334,7 +267,6 @@ async function main(initialVideoStream = null) {
 	function handleVideoFile(file) {
 		removeVideoInput();
 		imageInput = null;
-		preScaledImageSource = null;
 
 		const video = document.createElement('video');
 		video.autoplay = video.playsInline = video.muted = video.loop = true;
@@ -345,13 +277,14 @@ async function main(initialVideoStream = null) {
 		video.onloadedmetadata = () => {
 			videoInput = video;
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
+			syncRenderCanvasToSource(videoInput);
 			play = function play() {
 				shader.play(() => {
-					shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
+					shader.updateTextures({ u_inputStream: videoInput });
 				});
 			};
 			play();
-			shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
+			shader.updateTextures({ u_inputStream: videoInput });
 		};
 	}
 
@@ -362,68 +295,39 @@ async function main(initialVideoStream = null) {
 		const sceneName = scenes[currentSceneIndex].name;
 		window.posthog?.capture('take_photo', { scene: sceneName });
 		shader.pause();
-		const { width: canvasWidth, height: canvasHeight } = shader.canvas;
-		let exportWidth = canvasWidth,
-			exportHeight = canvasHeight;
-		const needsResize = exportWidth > MAX_EXPORT_DIMENSION || exportHeight > MAX_EXPORT_DIMENSION;
-		if (needsResize) {
-			const aspectRatio = exportWidth / exportHeight;
-			if (aspectRatio > 1) {
-				exportWidth = MAX_EXPORT_DIMENSION;
-				exportHeight = Math.round(MAX_EXPORT_DIMENSION / aspectRatio);
-			} else {
-				exportHeight = MAX_EXPORT_DIMENSION;
-				exportWidth = Math.round(MAX_EXPORT_DIMENSION * aspectRatio);
-			}
-			setRenderCanvasSize(exportWidth, exportHeight);
-			shader.draw();
-		}
 		await save(shader, `Strange Camera - ${sceneName}`, window.location.href, {
 			preventShare: e.pointerType === 'mouse',
 		});
-		if (needsResize) {
-			setRenderCanvasSize(canvasWidth, canvasHeight);
-		}
 		play();
 	}
 
-	let stopRecordingPromise = null;
-
-	function setRenderCanvasSize(width, height) {
-		if (shader.canvas.width === width && shader.canvas.height === height) return;
-		shader.canvas.width = width;
-		shader.canvas.height = height;
+	function setRenderCanvasSize(width, height, { notifyShader = true } = {}) {
+		if (canvas.width === width && canvas.height === height) return;
+		canvas.width = width;
+		canvas.height = height;
 		gl.viewport(0, 0, width, height);
-		updatePreScaledImage();
+		if (notifyShader) shader?.resize?.(width, height);
 	}
 
-	function startRecordingRenderMode() {
-		if (restoreRecordingRenderSize) return;
-
-		restoreRecordingRenderSize = {
-			width: shader.canvas.width,
-			height: shader.canvas.height,
-		};
-		const { width, height } = getMaxDimensionSize(
-			restoreRecordingRenderSize.width,
-			restoreRecordingRenderSize.height,
-			MAX_RECORDING_DIMENSION
-		);
-		setRenderCanvasSize(width, height);
-	}
-
-	function stopRecordingRenderMode() {
-		if (!restoreRecordingRenderSize) return;
-		const { width, height } = restoreRecordingRenderSize;
-		restoreRecordingRenderSize = null;
-		setRenderCanvasSize(width, height);
+	function syncRenderCanvasToSource(source, { notifyShader = true, scene = scenes[currentSceneIndex] } = {}) {
+		const nextSize = getRenderCanvasSizeForSource(source, scene);
+		if (!nextSize) return;
+		setRenderCanvasSize(nextSize.width, nextSize.height, { notifyShader });
 	}
 
 	function resetRecordingState() {
-		stopRecordingRenderMode();
 		isRecording = false;
-		document.body.classList.remove('recording');
-		mediaRecorder = null;
+		isRecordLocked = false;
+		isShutterPressed = false;
+		document.body.classList.remove('recording', 'record-locked');
+		recordLockEl.classList.remove('lock-hover');
+		clearActiveShutterPointer();
+		recordingOutput = null;
+		recordingVideoSource = null;
+		recordingAudioSource = null;
+		cleanupRecordingFrameCapture = null;
+		recordingFrameState = null;
+		recordingStartPromise = null;
 		audioProblemIndicator.style.display = 'none';
 
 		clearInterval(recordingTimerInterval);
@@ -432,39 +336,182 @@ async function main(initialVideoStream = null) {
 		recordingTimeEl.textContent = '0:00';
 	}
 
-	function stopCanvasRecordingCapture() {
-		cleanupRecordingCanvasCapture?.();
-		cleanupRecordingCanvasCapture = null;
+	async function stopRecordingFrameCapture() {
+		const frameState = recordingFrameState;
+		if (!frameState) return;
+
+		if (!frameState.stopped) {
+			frameState.stopped = true;
+			cleanupRecordingFrameCapture?.();
+			cleanupRecordingFrameCapture = null;
+
+			if (recordingVideoSource) {
+				try {
+					await enqueueRecordingFrame(true);
+				} catch {
+					// Finalize handles surfaced errors.
+				}
+			}
+		}
+
+		await frameState.pendingFramePromise.catch(() => {});
 	}
 
-	function createCanvasRecordingCapture() {
-		let canvasStream = canvas.captureStream(0);
-		let canvasTrack = canvasStream.getVideoTracks()[0];
-		const supportsManualFrameRequests = typeof canvasTrack?.requestFrame === 'function';
+	function getAudioEncodingProbeConfig() {
+		const settings = sessionAudioTrack?.getSettings?.() ?? {};
+		return {
+			numberOfChannels: settings.channelCount || 2,
+			sampleRate: settings.sampleRate || 48_000,
+			bitrate: RECORDING_AUDIO_BITRATE,
+		};
+	}
 
-		if (!supportsManualFrameRequests) {
-			canvasStream.getTracks().forEach(track => track.stop());
-			canvasStream = canvas.captureStream(RECORDING_FRAME_RATE);
-			canvasTrack = canvasStream.getVideoTracks()[0];
+	async function ensureAacEncoderRegistered() {
+		if (!aacEncoderRegistrationPromise) {
+			aacEncoderRegistrationPromise = import('@mediabunny/aac-encoder').then(({ registerAacEncoder }) =>
+				registerAacEncoder()
+			);
+		}
+		await aacEncoderRegistrationPromise;
+	}
+
+	async function getRecordingProfile(hasAudio) {
+		const videoOptions = {
+			width: canvas.width,
+			height: canvas.height,
+			bitrate: RECORDING_VIDEO_BITRATE,
+		};
+		const audioOptions = getAudioEncodingProbeConfig();
+
+		const mp4VideoCodec = await getFirstEncodableVideoCodec(['avc', 'hevc'], videoOptions);
+		if (mp4VideoCodec) {
+			let mp4AudioCodec = null;
+			if (hasAudio) {
+				mp4AudioCodec = await getFirstEncodableAudioCodec(['aac'], audioOptions);
+				if (!mp4AudioCodec) {
+					await ensureAacEncoderRegistered();
+					mp4AudioCodec = await getFirstEncodableAudioCodec(['aac'], audioOptions);
+				}
+			}
+
+			if (!hasAudio || mp4AudioCodec) {
+				return {
+					format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
+					extension: 'mp4',
+					videoCodec: mp4VideoCodec,
+					audioCodec: mp4AudioCodec,
+				};
+			}
 		}
 
-		if (!canvasTrack) {
-			throw new Error('Unable to capture a canvas video track.');
+		const webmVideoCodec = await getFirstEncodableVideoCodec(['vp09', 'vp8'], videoOptions);
+		const webmAudioCodec = hasAudio ? await getFirstEncodableAudioCodec(['opus'], audioOptions) : null;
+		if (!webmVideoCodec || (hasAudio && !webmAudioCodec)) {
+			throw new Error('No compatible Mediabunny recording profile is available in this browser.');
 		}
-
-		const activeShader = shader;
-		const requestFrame = typeof canvasTrack.requestFrame === 'function' ? () => canvasTrack.requestFrame() : null;
-		const handleAfterDraw = () => requestFrame?.();
-
-		activeShader.on('afterDraw', handleAfterDraw);
 
 		return {
-			canvasTrack,
-			cleanup() {
-				activeShader.off('afterDraw', handleAfterDraw);
-				canvasStream.getTracks().forEach(track => track.stop());
-			},
+			format: new WebMOutputFormat(),
+			extension: 'webm',
+			videoCodec: webmVideoCodec,
+			audioCodec: webmAudioCodec,
 		};
+	}
+
+	async function createRecordingOutput(audioTrack = null) {
+		const profile = await getRecordingProfile(!!audioTrack);
+		const output = new Output({
+			format: profile.format,
+			target: new BufferTarget(),
+		});
+
+		const videoSource = new CanvasSource(canvas, {
+			codec: profile.videoCodec,
+			bitrate: RECORDING_VIDEO_BITRATE,
+			latencyMode: 'realtime',
+			hardwareAcceleration: 'prefer-hardware',
+		});
+		output.addVideoTrack(videoSource, { frameRate: RECORDING_FRAME_RATE });
+
+		let audioSource = null;
+		if (audioTrack && profile.audioCodec) {
+			audioSource = new MediaStreamAudioTrackSource(audioTrack, {
+				codec: profile.audioCodec,
+				bitrate: RECORDING_AUDIO_BITRATE,
+			});
+			audioSource.errorPromise.catch(error => {
+				console.error('Mediabunny audio source error:', error);
+			});
+			output.addAudioTrack(audioSource);
+		}
+
+		await output.start();
+		return { output, videoSource, audioSource, extension: profile.extension };
+	}
+
+	function startRecordingFrameCapture() {
+		const frameState = {
+			startTimeMs: performance.now(),
+			lastQueuedTimestamp: null,
+			pendingFramePromise: Promise.resolve(),
+			frameInFlight: false,
+			frameQueuedWhileBusy: false,
+			stopped: false,
+			error: null,
+		};
+		recordingFrameState = frameState;
+
+		const handleAfterDraw = () => {
+			void enqueueRecordingFrame();
+		};
+
+		shader.on('afterDraw', handleAfterDraw);
+		cleanupRecordingFrameCapture = () => {
+			shader.off('afterDraw', handleAfterDraw);
+		};
+
+		void enqueueRecordingFrame(true);
+	}
+
+	function enqueueRecordingFrame(force = false) {
+		if (!recordingVideoSource || !recordingFrameState || recordingFrameState.stopped) {
+			return recordingFrameState?.pendingFramePromise ?? Promise.resolve();
+		}
+
+		const frameState = recordingFrameState;
+		const timestamp = Math.max(0, (performance.now() - frameState.startTimeMs) / 1000);
+		const minFrameInterval = 1 / RECORDING_FRAME_RATE;
+		if (
+			!force &&
+			frameState.lastQueuedTimestamp !== null &&
+			timestamp - frameState.lastQueuedTimestamp < minFrameInterval * 0.9
+		) {
+			return frameState.pendingFramePromise;
+		}
+
+		if (frameState.frameInFlight) {
+			frameState.frameQueuedWhileBusy = true;
+			return frameState.pendingFramePromise;
+		}
+
+		frameState.frameInFlight = true;
+		frameState.lastQueuedTimestamp = timestamp;
+		frameState.pendingFramePromise = recordingVideoSource
+			.add(timestamp, minFrameInterval)
+			.catch(error => {
+				frameState.error = error;
+				console.error('Mediabunny video source error:', error);
+				throw error;
+			})
+			.finally(() => {
+				frameState.frameInFlight = false;
+				if (frameState.frameQueuedWhileBusy && !frameState.stopped) {
+					frameState.frameQueuedWhileBusy = false;
+					void enqueueRecordingFrame(true);
+				}
+			});
+
+		return frameState.pendingFramePromise;
 	}
 
 	async function startRecording() {
@@ -483,48 +530,18 @@ async function main(initialVideoStream = null) {
 		window.posthog?.capture('start_recording', { scene: sceneName });
 
 		try {
-			startRecordingRenderMode();
-			const { canvasTrack, cleanup } = createCanvasRecordingCapture();
-			cleanupRecordingCanvasCapture = cleanup;
-
-			const tracks = [canvasTrack];
-			if (checkMicHealth() && sessionAudioTrack) {
-				tracks.push(sessionAudioTrack);
-			}
-			const combinedStream = new MediaStream(tracks);
-
-			const mimeTypePreference = ['video/mp4', 'video/webm'];
-			let mimeType = mimeTypePreference.find(type => MediaRecorder.isTypeSupported(type)) || '';
-
-			mediaRecorder = new MediaRecorder(combinedStream, {
-				mimeType,
-				videoBitsPerSecond: 2_500_000,
-				audioBitsPerSecond: 128_000,
-			});
-
-			const recordedChunks = [];
-			mediaRecorder.ondataavailable = event => {
-				if (event.data.size > 0) {
-					recordedChunks.push(event.data);
-				}
-			};
-			mediaRecorder.onerror = event => {
-				console.error('MediaRecorder error:', event.error || event);
-			};
-
-			stopRecordingPromise = new Promise(resolve => {
-				mediaRecorder.onstop = () => {
-					resolve(recordedChunks);
-				};
-			});
-
-			mediaRecorder.start();
+			const recording = await createRecordingOutput(checkMicHealth() ? sessionAudioTrack : null);
+			recordingOutput = recording.output;
+			recordingVideoSource = recording.videoSource;
+			recordingAudioSource = recording.audioSource;
+			startRecordingFrameCapture();
 
 			recordingStartTime = Date.now();
 			updateRecordingTime();
 			recordingTimerInterval = setInterval(updateRecordingTime, 250);
 		} catch (error) {
-			stopCanvasRecordingCapture();
+			await stopRecordingFrameCapture();
+			await recordingOutput?.cancel?.().catch(() => {});
 			console.error('Failed to start recording:', error);
 			resetRecordingState();
 		}
@@ -539,36 +556,53 @@ async function main(initialVideoStream = null) {
 	}
 
 	async function stopRecording(e) {
-		if (!isRecording || !mediaRecorder) return;
+		if (!isRecording || !recordingOutput) return;
 
 		const sceneName = scenes[currentSceneIndex].name;
 		window.posthog?.capture('stop_recording', { scene: sceneName });
+		const output = recordingOutput;
+		let recordingFile = null;
 
-		mediaRecorder.stop();
-		const recordedChunks = await stopRecordingPromise;
-		stopCanvasRecordingCapture();
-		if (recordedChunks.length) {
-			const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
-			const extension = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
-			const filename = `Strange Camera - ${sceneName}.${extension}`;
-			saveVideo(blob, `video/${extension}`, filename, window.location.href, {
-				preventShare: e.pointerType === 'mouse',
-			});
+		try {
+			await stopRecordingFrameCapture();
+			if (recordingFrameState?.error) {
+				throw recordingFrameState.error;
+			}
+
+			await output.finalize();
+			const buffer = output.target.buffer;
+			if (buffer) {
+				recordingFile = {
+					type: output.format.mimeType,
+					filename: `Strange Camera - ${sceneName}.${output.format.fileExtension.slice(1)}`,
+					blob: new Blob([buffer], { type: output.format.mimeType }),
+				};
+			}
+		} catch (error) {
+			console.error('Failed to finalize recording:', error);
+			await stopRecordingFrameCapture();
+			await output.cancel().catch(() => {});
+			resetRecordingState();
+			return;
 		}
 
 		resetRecordingState();
+
+		if (recordingFile) {
+			try {
+				await saveVideo(recordingFile.blob, recordingFile.type, recordingFile.filename, window.location.href, {
+					preventShare: e.pointerType === 'mouse',
+				});
+			} catch (error) {
+				console.error('Failed to save recording:', error);
+			}
+		}
 	}
 
 	function stopWebcamStream() {
 		if (videoInput.srcObject) {
 			videoInput.srcObject.getTracks().forEach(track => track.stop());
 		}
-	}
-
-	function getVideoConstraint() {
-		const sourceWidth = videoInput?.videoWidth || videoInput?.width || canvas.width;
-		const sourceHeight = videoInput?.videoHeight || videoInput?.height || canvas.height;
-		return getVideoWidthConstraint(canvas.width, canvas.height, sourceWidth, sourceHeight, currentMaxTextureSize);
 	}
 
 	async function flipCamera() {
@@ -582,9 +616,10 @@ async function main(initialVideoStream = null) {
 		currentCameraIndex[newFacingMode] = 0;
 		currentDeviceId = null;
 		try {
-			videoInput = await getCameraStream(null, newFacingMode, null, getVideoConstraint());
+			videoInput = await getCameraStream(null, newFacingMode);
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
-			shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
+			syncRenderCanvasToSource(videoInput);
+			shader.updateTextures({ u_inputStream: videoInput });
 			currentFacingMode = newFacingMode;
 			document.body.classList.toggle('flipped', newFacingMode === 'user');
 			await updateCameraList();
@@ -617,17 +652,19 @@ async function main(initialVideoStream = null) {
 
 		try {
 			removeVideoInput();
-			videoInput = await getCameraStream(null, currentFacingMode, nextCamera.deviceId, getVideoConstraint());
+			videoInput = await getCameraStream(null, currentFacingMode, nextCamera.deviceId);
 			currentDeviceId = nextCamera.deviceId;
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
-			shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
+			syncRenderCanvasToSource(videoInput);
+			shader.updateTextures({ u_inputStream: videoInput });
 		} catch (error) {
 			console.error('Failed to switch to next camera:', error);
 			// Try falling back to facingMode-only constraint
 			try {
-				videoInput = await getCameraStream(null, currentFacingMode, null, getVideoConstraint());
+				videoInput = await getCameraStream(null, currentFacingMode);
 				document.body.appendChild(videoInput);
-				shader.updateTextures({ u_inputStream: getTextureSource(videoInput) });
+				syncRenderCanvasToSource(videoInput);
+				shader.updateTextures({ u_inputStream: videoInput });
 			} catch (fallbackError) {
 				console.error('Failed to fallback to facingMode camera:', fallbackError);
 			}
@@ -636,26 +673,93 @@ async function main(initialVideoStream = null) {
 	let holdTimeout = null;
 	let isShutterPressed = false;
 	let recordingStartedFromCurrentPress = false;
+	let activeShutterPointerId = null;
 
-	function handleShutterDown() {
+	function clearHoldTimeout() {
+		clearTimeout(holdTimeout);
+		holdTimeout = null;
+	}
+
+	function clearActiveShutterPointer() {
+		if (activeShutterPointerId !== null && shutterButton.hasPointerCapture?.(activeShutterPointerId)) {
+			shutterButton.releasePointerCapture(activeShutterPointerId);
+		}
+		activeShutterPointerId = null;
+	}
+
+	function isOverLockIcon(clientX, clientY) {
+		const lockRect = recordLockEl.getBoundingClientRect();
+		return (
+			clientX >= lockRect.left &&
+			clientX <= lockRect.right &&
+			clientY >= lockRect.top &&
+			clientY <= lockRect.bottom
+		);
+	}
+
+	function updateRecordLockHover(e) {
+		if (!isRecording || isRecordLocked) {
+			recordLockEl.classList.remove('lock-hover');
+			return false;
+		}
+
+		const isHoveringLock = isOverLockIcon(e.clientX, e.clientY);
+		recordLockEl.classList.toggle('lock-hover', isHoveringLock);
+		return isHoveringLock;
+	}
+
+	function handleShutterDown(e) {
+		e.preventDefault();
+		if (isSettingsOpen) return;
+
+		if (isRecordLocked) {
+			void stopRecording(e);
+			return;
+		}
+
+		if (isRecording || activeShutterPointerId !== null) return;
+
 		isShutterPressed = true;
 		recordingStartedFromCurrentPress = false;
-		if (isSettingsOpen || isRecording) return;
+		activeShutterPointerId = e.pointerId;
+		shutterButton.setPointerCapture?.(e.pointerId);
 
 		holdTimeout = setTimeout(() => {
 			recordingStartedFromCurrentPress = true;
-			startRecording();
+			recordingStartPromise = startRecording().finally(() => {
+				recordingStartPromise = null;
+			});
 		}, HOLD_THRESHOLD_MS);
 	}
 
 	async function handleShutterUp(e) {
+		if (e.pointerId !== activeShutterPointerId) return;
+		e.preventDefault();
 		isShutterPressed = false;
-		clearTimeout(holdTimeout);
+		clearActiveShutterPointer();
+		clearHoldTimeout();
 		if (isSettingsOpen) return;
 
+		if (recordingStartedFromCurrentPress) {
+			recordingStartedFromCurrentPress = false;
+			await recordingStartPromise;
+			if (isRecording) {
+				if (updateRecordLockHover(e)) {
+					isRecordLocked = true;
+					document.body.classList.add('record-locked');
+					recordLockEl.classList.remove('lock-hover');
+					return;
+				}
+				await stopRecording(e);
+			}
+			return;
+		}
+
 		if (isRecording) {
-			if (recordingStartedFromCurrentPress) {
-				recordingStartedFromCurrentPress = false;
+			if (updateRecordLockHover(e)) {
+				isRecordLocked = true;
+				document.body.classList.add('record-locked');
+				recordLockEl.classList.remove('lock-hover');
 				return;
 			}
 			await stopRecording(e);
@@ -664,17 +768,28 @@ async function main(initialVideoStream = null) {
 		}
 	}
 
-	function handleShutterLeave() {
+	function handleShutterMove(e) {
+		if (e.pointerId !== activeShutterPointerId) return;
+		updateRecordLockHover(e);
+	}
+
+	function handleShutterLeave(e) {
+		if (e.pointerId !== activeShutterPointerId) return;
 		isShutterPressed = false;
+		clearActiveShutterPointer();
+		recordLockEl.classList.remove('lock-hover');
 		if (!isRecording) {
-			clearTimeout(holdTimeout);
+			recordingStartedFromCurrentPress = false;
+			clearHoldTimeout();
 		}
 	}
 
 	shutterButton.addEventListener('pointerdown', handleShutterDown);
-	shutterButton.addEventListener('pointerup', handleShutterUp);
-	shutterButton.addEventListener('pointerleave', handleShutterLeave);
-	shutterButton.addEventListener('pointercancel', handleShutterLeave);
+	document.addEventListener('pointermove', handleShutterMove);
+	document.addEventListener('pointerup', e => {
+		void handleShutterUp(e);
+	});
+	document.addEventListener('pointercancel', handleShutterLeave);
 
 	openMenuButton.addEventListener('click', toggleSettings);
 	flipCameraButton.addEventListener('click', flipCamera);
@@ -727,23 +842,17 @@ async function main(initialVideoStream = null) {
 			}
 		}
 
+		const currentInput = imageInput || videoInput;
+		syncRenderCanvasToSource(currentInput, { notifyShader: false, scene });
 		scene.initialize(wrappedSetShader, canvas, gl);
 		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
 		const textureOptions = scene.history ? { history: scene.history } : undefined;
 
-		clearTextureState();
-		currentMaxTextureSize = scene.maxTextureSize || null;
-		updatePreScaledImage();
-		shader.on('autosize:resize', () => {
-			updatePreScaledImage();
-		});
-
-		const currentInput = imageInput || videoInput;
-		shader.initializeTexture('u_inputStream', getTextureSource(currentInput), textureOptions);
+		shader.initializeTexture('u_inputStream', currentInput, textureOptions);
 		play = function play() {
 			shader.play(() => {
 				const source = imageInput || videoInput;
-				shader.updateTextures({ u_inputStream: getTextureSource(source) });
+				shader.updateTextures({ u_inputStream: source });
 			});
 		};
 		play();
@@ -838,7 +947,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	splashStart.addEventListener('click', async () => {
 		let stream = null;
-		const videoConstraints = { facingMode: 'user', width: getViewportVideoWidthConstraint() };
+		const videoConstraints = { facingMode: 'user', ...DEFAULT_CAMERA_CONSTRAINTS };
 		try {
 			stream = await navigator.mediaDevices.getUserMedia({
 				video: videoConstraints,

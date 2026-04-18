@@ -1,6 +1,5 @@
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
-import autosize from 'shaderpad/plugins/autosize';
 
 import scoreShaderSrc from './sorted-1-scores.glsl';
 import proposalShaderSrc from './sorted-2-proposal.glsl';
@@ -156,7 +155,7 @@ export default {
 
 		outputShader = new ShaderPad(outputShaderSrc, {
 			canvas,
-			plugins: [helpers(), autosize()],
+			plugins: [helpers()],
 		});
 
 		scoreShader.initializeUniform('u_heuristic', 'float', HEURISTIC_INITIAL);

@@ -1,6 +1,5 @@
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
-import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './dither.glsl';
 import precomputedMasks from './generated-mask-assets.js';
@@ -436,7 +435,7 @@ export default {
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,
-			plugins: [helpers(), autosize()],
+			plugins: [helpers()],
 		});
 		shader.initializeUniform('u_cellSizePx', 'float', DEFAULT_STATE.cellSize);
 		shader.initializeUniform('u_maskSize', 'int', DEFAULT_STATE.maskSize);

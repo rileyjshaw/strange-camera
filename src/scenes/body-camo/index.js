@@ -1,7 +1,6 @@
 import ShaderPad from 'shaderpad';
 import pose from 'shaderpad/plugins/pose';
 import helpers from 'shaderpad/plugins/helpers';
-import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './body-camo.glsl';
 import { lerp } from '../util.js';
@@ -21,7 +20,6 @@ export default {
 			canvas,
 			plugins: [
 				helpers(),
-				autosize(),
 				pose({
 					textureName: 'u_inputStream',
 					options: { maxPoses: 2 },

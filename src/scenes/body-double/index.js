@@ -1,7 +1,6 @@
 import ShaderPad from 'shaderpad';
 import segmenter from 'shaderpad/plugins/segmenter';
 import helpers from 'shaderpad/plugins/helpers';
-import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './body-double.glsl';
 import { normalize, lerp } from '../util.js';
@@ -27,7 +26,6 @@ export default {
 			canvas,
 			plugins: [
 				helpers(),
-				autosize(),
 				segmenter({
 					textureName: 'u_inputStream',
 					options: { history: HISTORY_SIZE },

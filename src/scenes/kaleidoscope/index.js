@@ -3,7 +3,6 @@
 
 import ShaderPad from 'shaderpad';
 import helpers from 'shaderpad/plugins/helpers';
-import autosize from 'shaderpad/plugins/autosize';
 
 import fragmentShaderSrc from './kaleidoscope.glsl';
 
@@ -57,7 +56,7 @@ export default {
 	initialize(setShader, canvas) {
 		const shader = new ShaderPad(fragmentShaderSrc, {
 			canvas,
-			plugins: [helpers(), autosize()],
+			plugins: [helpers()],
 		});
 		shader.initializeUniform('u_rotation', 'float', ROTATION_INITIAL);
 		shader.initializeUniform('u_scale', 'float', scaleZoom(SCALE_INITIAL));

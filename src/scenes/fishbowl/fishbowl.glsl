@@ -41,5 +41,6 @@ vec3 fishbowl(vec2 uv, vec2 resolution) {
 
 void main() {
 	vec3 sphere = fishbowl(v_uv, u_resolution);
-	outColor = texture(u_inputStream, sphere.xy) * sphere.z;
+	vec2 uv = fitCover(sphere.xy, vec2(textureSize(u_inputStream, 0)));
+	outColor = texture(u_inputStream, uv) * sphere.z;
 }

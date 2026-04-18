@@ -291,16 +291,19 @@
 				<span class="audio-problem-dot"></span>
 			</div>
 			<div id="controls">
-				<div class="control-button-wrapper">
-					<button id="open-menu" class="control-button" aria-label="Open menu">
-						<img src="/src/assets/images/eye-simple.svg" alt="" />
-					</button>
-				</div>
-				<div id="shutter-wrapper" class="control-button-wrapper">
-					<button id="shutter" class="control-button" aria-label="Take a photo or hold to record">
-						<img src="/src/assets/images/stop.svg" alt="" class="stop-icon" draggable="false" />
-					</button>
-				</div>
+					<div class="control-button-wrapper">
+						<button id="open-menu" class="control-button" aria-label="Open menu">
+							<img src="/src/assets/images/eye-simple.svg" alt="" />
+						</button>
+					</div>
+					<div id="shutter-wrapper" class="control-button-wrapper">
+						<div id="record-lock" aria-hidden="true">
+							<img src="/src/assets/images/lock.svg" alt="" draggable="false" />
+						</div>
+						<button id="shutter" class="control-button" aria-label="Take a photo or hold to record">
+							<img src="/src/assets/images/stop.svg" alt="" class="stop-icon" draggable="false" />
+						</button>
+					</div>
 				<div class="control-button-wrapper">
 					<button id="flip-camera" class="control-button" aria-label="Flip camera">
 						<img src="/src/assets/images/rotate.svg" alt="" />
