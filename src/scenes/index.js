@@ -3,7 +3,7 @@ import blurryface from './blurryface';
 import bodyCamo from './body-camo';
 import bodyDouble from './body-double';
 import channels from './channels';
-import colorPop from './color-pop';
+// import colorPop from './color-pop';
 import cutGlass from './cut-glass';
 import cutup from './cutup';
 import dither from './dither';
@@ -12,10 +12,10 @@ import fill from './fill';
 import fishbowl from './fishbowl';
 import kaleidoscope from './kaleidoscope';
 import lightTrails from './light-trails';
-import meshSensor from './mesh-sensor';
+// import meshSensor from './mesh-sensor';
 import pixelface from './pixelface';
 import salon from './salon';
-import slitScan from './slit-scan';
+// import slitScan from './slit-scan';
 import slow from './slow';
 import sorted from './sorted';
 import sunday from './sunday';
@@ -29,7 +29,7 @@ const scenes = [
 	bodyCamo,
 	bodyDouble,
 	channels,
-	colorPop,
+	// colorPop,
 	cutGlass,
 	cutup,
 	dither,
@@ -38,10 +38,10 @@ const scenes = [
 	fishbowl,
 	kaleidoscope,
 	lightTrails,
-	meshSensor,
+	// meshSensor,
 	pixelface,
 	salon,
-	slitScan,
+	// slitScan,
 	slow,
 	sorted,
 	sunday,
