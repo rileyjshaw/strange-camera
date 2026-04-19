@@ -15,7 +15,7 @@ import lightTrails from './light-trails';
 // import meshSensor from './mesh-sensor';
 import pixelface from './pixelface';
 import salon from './salon';
-// import slitScan from './slit-scan';
+import slitScan from './slit-scan';
 import slow from './slow';
 import sorted from './sorted';
 import sunday from './sunday';
@@ -41,7 +41,7 @@ const scenes = [
 	// meshSensor,
 	pixelface,
 	salon,
-	// slitScan,
+	slitScan,
 	slow,
 	sorted,
 	sunday,
