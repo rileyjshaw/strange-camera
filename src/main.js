@@ -28,6 +28,10 @@ const HOLD_THRESHOLD_MS = 300;
 const RECORDING_FRAME_RATE = 30;
 const RECORDING_VIDEO_BITRATE = 2_500_000;
 const RECORDING_AUDIO_BITRATE = 128_000;
+const RECORDING_MIME_TYPES = {
+	mp4: 'video/mp4',
+	webm: 'video/webm',
+};
 const DEFAULT_CAMERA_CONSTRAINTS = {
 	width: { ideal: TARGET_CAMERA_WIDTH },
 	height: { ideal: TARGET_CAMERA_HEIGHT },
@@ -41,6 +45,10 @@ function getMaxDimensionSize(width, height, maxDimension) {
 		width: Math.max(1, Math.round(safeWidth * scale)),
 		height: Math.max(1, Math.round(safeHeight * scale)),
 	};
+}
+
+function getRecordingMimeType(extension, fallbackType) {
+	return RECORDING_MIME_TYPES[extension] ?? fallbackType?.split(';', 1)[0]?.trim() ?? 'application/octet-stream';
 }
 
 let hasCameraPermission = false;
@@ -153,6 +161,7 @@ async function main(initialVideoStream = null) {
 	const recordingTimeEl = document.querySelector('.recording-time');
 
 	let play;
+	let resumeCameraPromise = null;
 
 	const app = document.getElementById('app');
 	const settingsEl = document.getElementById('settings');
@@ -572,10 +581,12 @@ async function main(initialVideoStream = null) {
 			await output.finalize();
 			const buffer = output.target.buffer;
 			if (buffer) {
+				const extension = output.format.fileExtension.slice(1);
+				const type = getRecordingMimeType(extension, output.format.mimeType);
 				recordingFile = {
-					type: output.format.mimeType,
-					filename: `Strange Camera - ${sceneName}.${output.format.fileExtension.slice(1)}`,
-					blob: new Blob([buffer], { type: output.format.mimeType }),
+					type,
+					filename: `Strange Camera - ${sceneName}.${extension}`,
+					blob: new Blob([buffer], { type }),
 				};
 			}
 		} catch (error) {
@@ -591,7 +602,7 @@ async function main(initialVideoStream = null) {
 		if (recordingFile) {
 			try {
 				await saveVideo(recordingFile.blob, recordingFile.type, recordingFile.filename, window.location.href, {
-					preventShare: e.pointerType === 'mouse',
+					preventShare: e?.pointerType === 'mouse',
 				});
 			} catch (error) {
 				console.error('Failed to save recording:', error);
@@ -603,6 +614,53 @@ async function main(initialVideoStream = null) {
 		if (videoInput.srcObject) {
 			videoInput.srcObject.getTracks().forEach(track => track.stop());
 		}
+	}
+
+	function hasLiveCameraTrack() {
+		return videoInput.srcObject?.getVideoTracks().some(track => track.readyState === 'live') ?? false;
+	}
+
+	async function replaceCameraInput() {
+		removeVideoInput();
+		try {
+			videoInput = await getCameraStream(null, currentFacingMode, currentDeviceId);
+		} catch (error) {
+			if (!currentDeviceId) throw error;
+			currentDeviceId = null;
+			videoInput = await getCameraStream(null, currentFacingMode);
+		}
+		document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
+		syncRenderCanvasToSource(videoInput);
+		shader?.updateTextures({ u_inputStream: videoInput });
+		currentDeviceId = videoInput.srcObject?.getVideoTracks()[0]?.getSettings?.().deviceId ?? currentDeviceId;
+	}
+
+	async function resumeCameraView() {
+		if (document.visibilityState === 'hidden') return;
+
+		if (!imageInput && videoInput.srcObject && !hasLiveCameraTrack()) {
+			try {
+				await replaceCameraInput();
+			} catch (error) {
+				console.error('Failed to resume camera:', error);
+				return;
+			}
+		}
+
+		const source = imageInput || videoInput;
+		if (source instanceof HTMLVideoElement) {
+			await source.play().catch(error => {
+				console.warn('Failed to resume video input:', error);
+			});
+		}
+		play?.();
+	}
+
+	function queueResumeCameraView() {
+		if (resumeCameraPromise) return;
+		resumeCameraPromise = resumeCameraView().finally(() => {
+			resumeCameraPromise = null;
+		});
 	}
 
 	async function flipCamera() {
@@ -790,6 +848,10 @@ async function main(initialVideoStream = null) {
 		void handleShutterUp(e);
 	});
 	document.addEventListener('pointercancel', handleShutterLeave);
+	window.addEventListener('pageshow', queueResumeCameraView);
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible') queueResumeCameraView();
+	});
 
 	openMenuButton.addEventListener('click', toggleSettings);
 	flipCameraButton.addEventListener('click', flipCamera);

@@ -301,6 +301,29 @@ body {
 	box-shadow: 0 0 6px var(--color-red);
 }
 
+#save-video-prompt {
+	all: unset;
+	position: fixed;
+	left: 50%;
+	bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+	z-index: 20;
+	transform: translateX(-50%);
+	padding: 0.7rem 1rem;
+	color: var(--color-dark);
+	background: var(--color-light-green);
+	border: 2px solid var(--color-dark);
+	border-radius: 999px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+	cursor: pointer;
+	font-family: 'Cartograph CF', monospace;
+	font-size: 1rem;
+	white-space: nowrap;
+}
+
+#save-video-prompt[hidden] {
+	display: none;
+}
+
 .control-button-wrapper:not(#shutter-wrapper) {
 	height: 52px;
 	width: 52px;
