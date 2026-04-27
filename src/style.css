@@ -183,7 +183,9 @@ body.splash-dismissed:not(.settings-open) #app {
 	gap: 16px;
 	opacity: 1;
 	visibility: visible;
-	transition: opacity 0.2s ease, visibility 0s linear 0s;
+	transition:
+		opacity 0.2s ease,
+		visibility 0s linear 0s;
 }
 
 #app:not(.ready) #controls,
@@ -191,16 +193,17 @@ body:is(.settings-open, .controls-hidden) #controls {
 	pointer-events: none;
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+	transition:
+		opacity 0.2s ease,
+		visibility 0s linear 0.2s;
 }
 
 #slider-feedback {
 	--slider-feedback-fill: 0%;
-	position: fixed;
-	right: 12px;
-	top: calc(12px + env(safe-area-inset-top, 0px));
-	left: 12px;
-	z-index: 9;
+	position: relative;
+	display: flex;
+	width: 100%;
+	margin-top: env(safe-area-inset-top, 0px);
 	min-height: 54px;
 	padding: 12px 18px;
 	color: var(--color-light-green);
@@ -213,6 +216,7 @@ body:is(.settings-open, .controls-hidden) #controls {
 	);
 	border-radius: 4px;
 	font-family: 'Cartograph CF', monospace;
+	align-items: center;
 	justify-content: center;
 	line-height: 1;
 	pointer-events: none;
@@ -293,7 +297,9 @@ body.settings-open #slider-feedback {
 	align-items: center;
 	justify-content: center;
 	pointer-events: none;
-	transition: transform 0.15s ease, background-color 0.15s ease;
+	transition:
+		transform 0.15s ease,
+		background-color 0.15s ease;
 }
 
 #record-lock img {
@@ -399,9 +405,13 @@ body.settings-open #slider-feedback {
 		rgba(231, 229, 228, 0.4),
 		var(--color-light)
 	);
-	box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.6), inset -2px -2px 4px rgba(0, 0, 0, 0.1),
+	box-shadow:
+		inset 2px 2px 4px rgba(255, 255, 255, 0.6),
+		inset -2px -2px 4px rgba(0, 0, 0, 0.1),
 		2px 2px 4px rgba(0, 0, 0, 0.1);
-	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	transition:
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -434,7 +444,9 @@ body.settings-open #slider-feedback {
 		rgba(231, 229, 228, 0.5),
 		var(--color-light)
 	);
-	box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.7), inset -2px -2px 4px rgba(0, 0, 0, 0.08),
+	box-shadow:
+		inset 2px 2px 4px rgba(255, 255, 255, 0.7),
+		inset -2px -2px 4px rgba(0, 0, 0, 0.08),
 		3px 3px 6px rgba(0, 0, 0, 0.12);
 	transform: scale(1.04);
 }
@@ -446,10 +458,14 @@ body.settings-open #slider-feedback {
 		rgba(200, 198, 197, 0.6),
 		var(--color-light)
 	);
-	box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.2), inset -1px -1px 2px rgba(255, 255, 255, 0.3),
+	box-shadow:
+		inset 3px 3px 6px rgba(0, 0, 0, 0.2),
+		inset -1px -1px 2px rgba(255, 255, 255, 0.3),
 		1px 1px 2px rgba(0, 0, 0, 0.1);
 	transform: scale(0.88);
-	transition: transform 0.1s ease, box-shadow 0.1s ease;
+	transition:
+		transform 0.1s ease,
+		box-shadow 0.1s ease;
 }
 
 canvas {
