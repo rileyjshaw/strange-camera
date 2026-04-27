@@ -230,6 +230,7 @@ body.settings-open #slider-feedback {
 }
 
 #slider-feedback-text {
+	font-size: 24px;
 	max-width: 100%;
 	overflow: hidden;
 	text-align: center;

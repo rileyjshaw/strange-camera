@@ -1,8 +1,6 @@
 import handleTouch from './handleTouch';
-import { autoTextSize } from './autoTextSize';
 
 const SLIDER_FEEDBACK_HIDE_DELAY_MS = 900;
-const SLIDER_FEEDBACK_MAX_FONT_SIZE_PX = 42;
 
 function generatePrecisionDefaults(controls) {
 	return Object.fromEntries([
@@ -42,12 +40,6 @@ function createSliderFeedback(scene) {
 		};
 	}
 
-	const updateTextSize = autoTextSize({
-		innerEl: sliderFeedbackTextEl,
-		containerEl: sliderFeedbackEl,
-		mode: 'oneline',
-		maxFontSizePx: SLIDER_FEEDBACK_MAX_FONT_SIZE_PX,
-	});
 	let hideTimeout = null;
 
 	function hide() {
@@ -62,7 +54,6 @@ function createSliderFeedback(scene) {
 			sliderFeedbackTextEl.textContent = controlName;
 			sliderFeedbackEl.style.setProperty('--slider-feedback-fill', `${value * 100}%`);
 			sliderFeedbackEl.classList.add('active');
-			updateTextSize();
 
 			clearTimeout(hideTimeout);
 			hideTimeout = setTimeout(hide, SLIDER_FEEDBACK_HIDE_DELAY_MS);
@@ -71,7 +62,6 @@ function createSliderFeedback(scene) {
 			clearTimeout(hideTimeout);
 			hide();
 			sliderFeedbackTextEl.textContent = '';
-			updateTextSize.disconnect();
 		},
 	};
 }
