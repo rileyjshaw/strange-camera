@@ -63,13 +63,23 @@
 			});
 		</script>
 		<script>
+			const moduleReloadKey = 'strange-camera-module-reload';
+			const moduleReloadCooldownMs = 30_000;
 			window.addEventListener('error', event => {
 				const isModuleLoadError =
 					event.message === 'Importing a module script failed.' ||
 					(event.target?.tagName === 'SCRIPT' && event.target?.type === 'module');
-				if (!isModuleLoadError || sessionStorage.getItem('strange-camera-module-reload')) return;
+				if (!isModuleLoadError) return;
 
-				sessionStorage.setItem('strange-camera-module-reload', '1');
+				let lastModuleReload = 0;
+				try {
+					lastModuleReload = Number(sessionStorage.getItem(moduleReloadKey) ?? 0);
+				} catch {}
+				if (lastModuleReload && Date.now() - lastModuleReload < moduleReloadCooldownMs) return;
+
+				try {
+					sessionStorage.setItem(moduleReloadKey, Date.now().toString());
+				} catch {}
 				Promise.all([
 					navigator.serviceWorker?.getRegistrations?.().then(registrations =>
 						Promise.all(registrations.map(registration => registration.update()))

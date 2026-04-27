@@ -6,6 +6,7 @@ import fragmentShaderSrc from './blurryface.glsl';
 import kawaseDownSrc from './kawase-down.glsl';
 import kawaseUpSrc from './kawase-up.glsl';
 import { lerp } from '../util.js';
+import { MEDIAPIPE_WASM_BASE_URL, SELFIE_SEGMENTER_MODEL_PATH } from '../mediapipe.js';
 
 const BLUR_OFFSET_MIN = 0.5;
 const BLUR_OFFSET_MAX = 4.0;
@@ -82,7 +83,8 @@ export default {
 				helpers(),
 				segmenter({
 					textureName: 'u_inputStream',
-					options: { history: MASK_HISTORY },
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
+					options: { modelPath: SELFIE_SEGMENTER_MODEL_PATH, history: MASK_HISTORY },
 				}),
 			],
 		});

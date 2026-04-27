@@ -14,6 +14,12 @@ import {
 	getFirstEncodableVideoCodec,
 } from 'mediabunny';
 
+try {
+	sessionStorage.removeItem('strange-camera-module-reload');
+} catch {
+	// Ignore storage access errors.
+}
+
 function updateUrlHash(scene) {
 	window.location.hash = scene.hash;
 }
@@ -622,11 +628,12 @@ async function main(initialVideoStream = null) {
 	}
 
 	function updateInputTexture(source) {
-		if (!source) return;
+		if (!source || !shader) return;
 		shader.updateTextures({ u_inputStream: source });
 	}
 
 	function playShader() {
+		if (!shader) return;
 		const activeShader = shader;
 		activeShader.play(() => {
 			const source = imageInput || videoInput;
@@ -887,14 +894,26 @@ async function main(initialVideoStream = null) {
 	}
 
 	let cleanupScene;
-	function switchToScene(index, skipHashUpdate) {
+	function cleanupCurrentScene() {
+		const cleanup = cleanupScene;
+		cleanupScene = undefined;
+		cleanup?.();
+		shader = undefined;
+	}
+
+	function switchToScene(index, skipHashUpdate, failedSceneCount = 0) {
 		currentSceneIndex = index;
 		const scene = scenes[currentSceneIndex];
 		const loadingSceneIndex = currentSceneIndex;
-		cleanupScene?.();
+		cleanupCurrentScene();
 		settingsEl.classList.add('scene-loading', 'populated');
 		titleEl.textContent = scene.name;
 		titleEl.setAttribute('data-text', scene.name);
+
+		function fallbackToNextScene() {
+			if (scenes.length <= 1 || failedSceneCount >= scenes.length - 1) return;
+			switchToScene((currentSceneIndex + 1) % scenes.length, skipHashUpdate, failedSceneCount + 1);
+		}
 
 		let sceneReadyPromise;
 		function wrappedSetShader(newShader) {
@@ -924,14 +943,16 @@ async function main(initialVideoStream = null) {
 			scene.initialize(wrappedSetShader, canvas, gl);
 		} catch (error) {
 			console.error(`Failed to initialize scene "${scene.name}":`, error);
+			cleanupCurrentScene();
 			settingsEl.classList.remove('scene-loading');
-			if (scenes.length > 1) switchToScene((currentSceneIndex + 1) % scenes.length, skipHashUpdate);
+			fallbackToNextScene();
 			return;
 		}
 		if (!shader || !sceneReadyPromise) {
 			console.error(`Scene "${scene.name}" did not provide a shader.`);
+			cleanupCurrentScene();
 			settingsEl.classList.remove('scene-loading');
-			if (scenes.length > 1) switchToScene((currentSceneIndex + 1) % scenes.length, skipHashUpdate);
+			fallbackToNextScene();
 			return;
 		}
 		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
@@ -941,8 +962,9 @@ async function main(initialVideoStream = null) {
 			shader.initializeTexture('u_inputStream', currentInput, textureOptions);
 		} catch (error) {
 			console.error(`Failed to initialize input texture for scene "${scene.name}":`, error);
-			cleanupScene?.();
-			if (scenes.length > 1) switchToScene((currentSceneIndex + 1) % scenes.length, skipHashUpdate);
+			cleanupCurrentScene();
+			settingsEl.classList.remove('scene-loading');
+			fallbackToNextScene();
 			return;
 		}
 		play = function play() {
@@ -967,7 +989,9 @@ async function main(initialVideoStream = null) {
 		}).catch(error => {
 			if (loadingSceneIndex !== currentSceneIndex) return;
 			console.error(`Scene "${scene.name}" failed while loading:`, error);
+			cleanupCurrentScene();
 			settingsEl.classList.remove('scene-loading');
+			fallbackToNextScene();
 		});
 
 		if (!skipHashUpdate) updateUrlHash(scenes[currentSceneIndex]);

@@ -3,6 +3,7 @@ import face from 'shaderpad/plugins/face';
 import helpers from 'shaderpad/plugins/helpers';
 
 import fragmentShaderSrc from './sunday.glsl';
+import { FACE_MODEL_PATH, MEDIAPIPE_WASM_BASE_URL } from '../mediapipe.js';
 
 const COLOR_VALUE_INITIAL = 1;
 const GLOW_AMOUNT_INITIAL = 0.2;
@@ -25,7 +26,8 @@ export default {
 				helpers(),
 				face({
 					textureName: 'u_inputStream',
-					options: { maxFaces: 4 },
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
+					options: { modelPath: FACE_MODEL_PATH, maxFaces: 4 },
 				}),
 			],
 		});

@@ -8,6 +8,30 @@ export default {
 		glsl(),
 		VitePWA({
 			registerType: 'autoUpdate',
+			workbox: {
+				cleanupOutdatedCaches: true,
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
+				globIgnores: ['**/mediapipe/**/*'],
+				navigateFallback: '/index.html',
+				runtimeCaching: [
+					{
+						urlPattern: ({ sameOrigin, url }) =>
+							sameOrigin && url.pathname.startsWith('/mediapipe/'),
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'mediapipe-assets',
+							cacheableResponse: {
+								statuses: [0, 200],
+							},
+							expiration: {
+								maxEntries: 16,
+								maxAgeSeconds: 365 * 24 * 60 * 60,
+								purgeOnQuotaError: true,
+							},
+						},
+					},
+				],
+			},
 			manifest: {
 				name: 'Strange Camera',
 				short_name: 'Strange.Cam',

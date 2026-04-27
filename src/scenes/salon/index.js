@@ -3,6 +3,7 @@ import segmenter from 'shaderpad/plugins/segmenter';
 import helpers from 'shaderpad/plugins/helpers';
 
 import fragmentShaderSrc from './salon.glsl';
+import { HAIR_SEGMENTER_MODEL_PATH, MEDIAPIPE_WASM_BASE_URL } from '../mediapipe.js';
 
 const HUE_INITIAL = 0.5;
 const BRIGHTNESS_INITIAL = 0.5;
@@ -32,9 +33,9 @@ export default {
 				helpers(),
 				segmenter({
 					textureName: 'u_inputStream',
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
 					options: {
-						modelPath:
-							'https://storage.googleapis.com/mediapipe-models/image_segmenter/hair_segmenter/float32/latest/hair_segmenter.tflite',
+						modelPath: HAIR_SEGMENTER_MODEL_PATH,
 						outputConfidenceMasks: true,
 					},
 				}),

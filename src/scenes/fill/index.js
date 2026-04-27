@@ -3,6 +3,10 @@ import segmenter from 'shaderpad/plugins/segmenter';
 import helpers from 'shaderpad/plugins/helpers';
 
 import fragmentShaderSrc from './fill.glsl';
+import {
+	MEDIAPIPE_WASM_BASE_URL,
+	SELFIE_MULTICLASS_SEGMENTER_MODEL_PATH,
+} from '../mediapipe.js';
 
 const OPACITY_INITIAL = 0.8;
 const HUE_INITIAL = 0.33; // green
@@ -37,9 +41,9 @@ export default {
 				helpers(),
 				segmenter({
 					textureName: 'u_inputStream',
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
 					options: {
-						modelPath:
-							'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite',
+						modelPath: SELFIE_MULTICLASS_SEGMENTER_MODEL_PATH,
 						outputConfidenceMasks: true,
 					},
 				}),

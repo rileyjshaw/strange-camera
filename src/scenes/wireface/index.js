@@ -5,6 +5,7 @@ import { FaceLandmarker } from '@mediapipe/tasks-vision';
 
 import fragmentShaderSrc from './wireface.glsl';
 import { lerp } from '../util.js';
+import { FACE_MODEL_PATH, MEDIAPIPE_WASM_BASE_URL } from '../mediapipe.js';
 
 const LINE_HUE_ROTATION_INITIAL = 0.78;
 const DOT_HUE_ROTATION_INITIAL = 0.2;
@@ -85,7 +86,8 @@ export default {
 				helpers(),
 				face({
 					textureName: 'u_inputStream',
-					options: { maxFaces: 3 },
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
+					options: { modelPath: FACE_MODEL_PATH, maxFaces: 3 },
 				}),
 			],
 		});

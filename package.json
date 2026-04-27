@@ -4,9 +4,12 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
+		"predev": "node scripts/vendor-mediapipe-assets.mjs",
 		"dev": "vite",
+		"prebuild": "node scripts/vendor-mediapipe-assets.mjs",
 		"build": "vite build",
 		"preview": "vite preview",
+		"vendor-mediapipe-assets": "node scripts/vendor-mediapipe-assets.mjs",
 		"generate-pwa-assets": "pwa-assets-generator",
 		"generate-dither-mask-assets": "node scripts/generate-dither-mask-assets.mjs"
 	},

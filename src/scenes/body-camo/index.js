@@ -4,6 +4,7 @@ import helpers from 'shaderpad/plugins/helpers';
 
 import fragmentShaderSrc from './body-camo.glsl';
 import { lerp } from '../util.js';
+import { MEDIAPIPE_WASM_BASE_URL, POSE_MODEL_PATH } from '../mediapipe.js';
 
 const OFFSET_PIXELS_MIN = 1;
 const OFFSET_PIXELS_MAX = 180;
@@ -22,7 +23,8 @@ export default {
 				helpers(),
 				pose({
 					textureName: 'u_inputStream',
-					options: { maxPoses: 2 },
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
+					options: { modelPath: POSE_MODEL_PATH, maxPoses: 2 },
 				}),
 			],
 		});

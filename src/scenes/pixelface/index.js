@@ -4,6 +4,7 @@ import helpers from 'shaderpad/plugins/helpers';
 
 import fragmentShaderSrc from './pixelface.glsl';
 import { lerp } from '../util.js';
+import { FACE_MODEL_PATH, MEDIAPIPE_WASM_BASE_URL } from '../mediapipe.js';
 
 const FACE_SCALE_MIN = 0.75;
 const FACE_SCALE_MAX = 1.5;
@@ -28,7 +29,8 @@ export default {
 				helpers(),
 				face({
 					textureName: 'u_inputStream',
-					options: { maxFaces: 3 },
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
+					options: { modelPath: FACE_MODEL_PATH, maxFaces: 3 },
 				}),
 			],
 		});

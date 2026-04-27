@@ -4,6 +4,7 @@ import helpers from 'shaderpad/plugins/helpers';
 
 import fragmentShaderSrc from './face-camo.glsl';
 import { lerp } from '../util.js';
+import { FACE_MODEL_PATH, MEDIAPIPE_WASM_BASE_URL } from '../mediapipe.js';
 
 const OFFSET_PIXELS_MIN = 1;
 const OFFSET_PIXELS_MAX = 160;
@@ -22,7 +23,8 @@ export default {
 				helpers(),
 				face({
 					textureName: 'u_inputStream',
-					options: { maxFaces: 3 },
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
+					options: { modelPath: FACE_MODEL_PATH, maxFaces: 3 },
 				}),
 			],
 		});

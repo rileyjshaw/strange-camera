@@ -4,6 +4,7 @@ import helpers from 'shaderpad/plugins/helpers';
 
 import fragmentShaderSrc from './body-double.glsl';
 import { normalize, lerp } from '../util.js';
+import { MEDIAPIPE_WASM_BASE_URL, SELFIE_SEGMENTER_MODEL_PATH } from '../mediapipe.js';
 
 const HISTORY_SIZE = 120;
 const N_ECHOES_MIN = 1;
@@ -28,7 +29,8 @@ export default {
 				helpers(),
 				segmenter({
 					textureName: 'u_inputStream',
-					options: { history: HISTORY_SIZE },
+					wasmBaseUrl: MEDIAPIPE_WASM_BASE_URL,
+					options: { modelPath: SELFIE_SEGMENTER_MODEL_PATH, history: HISTORY_SIZE },
 				}),
 			],
 		});
