@@ -17,7 +17,7 @@ const HISTORY_SIZE = maxHistoryOffset + 1;
 export default {
 	name: 'Slow',
 	hash: 'slow',
-	controls: [['Number of segments'], ['Delay per segment']],
+	controls: [['Segment count'], ['Delay per segment']],
 	controlValues: {
 		x1: (DIVISIONS_INITIAL - DIVISIONS_MIN) / (DIVISIONS_MAX - DIVISIONS_MIN),
 		y1:

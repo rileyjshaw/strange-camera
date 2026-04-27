@@ -73,7 +73,7 @@ const uniformValues = {};
 export default {
 	name: 'Cutup',
 	hash: 'cutup',
-	controls: [['Number of shuffles'], ['Number of strips']],
+	controls: [['Shuffle count'], ['Segment count']],
 	controlValues: {
 		x1: normalize(N_SHUFFLES_MIN, N_SHUFFLES_MAX, N_SHUFFLES_INITIAL),
 		y1: normalize(N_STRIPS_MIN, N_STRIPS_MAX, N_STRIPS_INITIAL),

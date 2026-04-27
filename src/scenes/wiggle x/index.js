@@ -10,7 +10,7 @@ const Y1_INITIAL = 0;
 export default {
 	name: 'Wiggle X',
 	hash: 'wiggle-x',
-	controls: [['Number of columns'], ['Delay per column']],
+	controls: [['Column count'], ['Delay per column']],
 	controlValues: { x1: X1_INITIAL, y1: Y1_INITIAL },
 	history: 196,
 	maxTextureSize: 720,

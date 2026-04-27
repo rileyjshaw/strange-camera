@@ -14,7 +14,7 @@ const REFRACTION_INTENSITY_INITIAL = 2;
 export default {
 	name: 'Cut Glass',
 	hash: 'cut-glass',
-	controls: [['Refraction intensity'], ['Number of strips']],
+	controls: [['Refraction intensity'], ['Segment count']],
 	controlValues: {
 		x1: normalize(MIN_REFRACTION_INTENSITY, MAX_REFRACTION_INTENSITY, REFRACTION_INTENSITY_INITIAL),
 		y1: normalize(MIN_N_STRIPS, MAX_N_STRIPS, N_STRIPS_INITIAL),

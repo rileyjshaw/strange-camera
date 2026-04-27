@@ -14,7 +14,7 @@ const N_ECHOES_INITIAL = 5;
 export default {
 	name: 'Body Double',
 	hash: 'body-double',
-	controls: [['Number of echoes'], ['Delay per echo']],
+	controls: [['Echo count'], ['Delay per echo']],
 	controlValues: {
 		x1: normalize(N_ECHOES_MIN, N_ECHOES_MAX, N_ECHOES_INITIAL),
 		y1: 0.5,

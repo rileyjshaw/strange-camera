@@ -107,10 +107,6 @@ body.splash-dismissed:not(.settings-open) #app {
 	touch-action: none;
 }
 
-#app:not(.ready) #controls {
-	display: none;
-}
-
 #splash {
 	display: flex;
 	flex-direction: column;
@@ -185,6 +181,60 @@ body.splash-dismissed:not(.settings-open) #app {
 	justify-content: center;
 	align-items: flex-end;
 	gap: 16px;
+	opacity: 1;
+	visibility: visible;
+	transition: opacity 0.2s ease, visibility 0s linear 0s;
+}
+
+#app:not(.ready) #controls,
+body:is(.settings-open, .controls-hidden) #controls {
+	pointer-events: none;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+}
+
+#slider-feedback {
+	--slider-feedback-fill: 0%;
+	position: fixed;
+	right: 12px;
+	top: calc(12px + env(safe-area-inset-top, 0px));
+	left: 12px;
+	z-index: 9;
+	min-height: 54px;
+	padding: 12px 18px;
+	color: var(--color-light-green);
+	background: linear-gradient(
+		90deg,
+		#000 0,
+		#000 var(--slider-feedback-fill),
+		rgba(0, 0, 0, 0.33) var(--slider-feedback-fill),
+		rgba(0, 0, 0, 0.33) 100%
+	);
+	border-radius: 4px;
+	font-family: 'Cartograph CF', monospace;
+	justify-content: center;
+	line-height: 1;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.12s ease;
+}
+
+#slider-feedback.active {
+	opacity: 1;
+}
+
+body.settings-open #slider-feedback {
+	opacity: 0;
+	visibility: hidden;
+}
+
+#slider-feedback-text {
+	max-width: 100%;
+	overflow: hidden;
+	text-align: center;
+	text-overflow: clip;
+	white-space: nowrap;
 }
 
 .control-button-wrapper {
@@ -480,10 +530,6 @@ body.settings-open #settings.populated {
 	border-top-color: currentColor;
 	border-radius: 50%;
 	animation: spin 0.8s linear infinite;
-}
-
-body:is(.settings-open, .controls-hidden) #controls {
-	display: none;
 }
 
 .scene-title,

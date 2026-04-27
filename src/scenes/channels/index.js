@@ -20,7 +20,7 @@ const uniformValues = {};
 export default {
 	name: 'Channels',
 	hash: 'channels',
-	controls: [['Number of echoes'], ['Delay per echo']],
+	controls: [['Echo count'], ['Delay per echo']],
 	controlValues: { x1: 0 },
 	history: maxFrameDelay,
 	maxTextureSize: 720,

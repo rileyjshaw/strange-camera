@@ -174,6 +174,7 @@ async function main(initialVideoStream = null) {
 
 	const app = document.getElementById('app');
 	const settingsEl = document.getElementById('settings');
+	const sliderFeedbackEl = document.getElementById('slider-feedback');
 	const titleEl = document.getElementById('title');
 	const canvas = document.querySelector('canvas');
 	const gl = canvas.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
@@ -890,6 +891,7 @@ async function main(initialVideoStream = null) {
 	function toggleSettings() {
 		isSettingsOpen = !isSettingsOpen;
 		document.body.classList.toggle('settings-open', isSettingsOpen);
+		if (isSettingsOpen) sliderFeedbackEl?.classList.remove('active');
 	}
 	function toggleControls() {
 		isControlsHidden = !isControlsHidden;
