@@ -62,6 +62,24 @@
 				person_profiles: 'identified_only',
 			});
 		</script>
+		<script>
+			window.addEventListener('error', event => {
+				const isModuleLoadError =
+					event.message === 'Importing a module script failed.' ||
+					(event.target?.tagName === 'SCRIPT' && event.target?.type === 'module');
+				if (!isModuleLoadError || sessionStorage.getItem('strange-camera-module-reload')) return;
+
+				sessionStorage.setItem('strange-camera-module-reload', '1');
+				Promise.all([
+					navigator.serviceWorker?.getRegistrations?.().then(registrations =>
+						Promise.all(registrations.map(registration => registration.update()))
+					),
+					window.caches?.keys?.().then(keys =>
+						Promise.all(keys.filter(key => key.startsWith('workbox-')).map(key => caches.delete(key)))
+					),
+				]).finally(() => window.location.reload());
+			});
+		</script>
 		<meta charset="UTF-8" />
 		<meta
 			name="viewport"

@@ -262,9 +262,7 @@ async function main(initialVideoStream = null) {
 				imageInput = image;
 				syncRenderCanvasToSource(image);
 				play = function play() {
-					shader.play(() => {
-						shader.updateTextures({ u_inputStream: image });
-					});
+					playShader();
 				};
 				play();
 			};
@@ -288,12 +286,10 @@ async function main(initialVideoStream = null) {
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			syncRenderCanvasToSource(videoInput);
 			play = function play() {
-				shader.play(() => {
-					shader.updateTextures({ u_inputStream: videoInput });
-				});
+				playShader();
 			};
 			play();
-			shader.updateTextures({ u_inputStream: videoInput });
+			updateInputTexture(videoInput);
 		};
 	}
 
@@ -304,10 +300,15 @@ async function main(initialVideoStream = null) {
 		const sceneName = scenes[currentSceneIndex].name;
 		window.posthog?.capture('take_photo', { scene: sceneName });
 		shader.pause();
-		await save(shader, `Strange Camera - ${sceneName}`, window.location.href, {
-			preventShare: e.pointerType === 'mouse',
-		});
-		play();
+		try {
+			await save(shader, `Strange Camera - ${sceneName}`, window.location.href, {
+				preventShare: e.pointerType === 'mouse',
+			});
+		} catch (error) {
+			console.error('Failed to export image:', error);
+		} finally {
+			play?.();
+		}
 	}
 
 	function setRenderCanvasSize(width, height, { notifyShader = true } = {}) {
@@ -611,13 +612,26 @@ async function main(initialVideoStream = null) {
 	}
 
 	function stopWebcamStream() {
-		if (videoInput.srcObject) {
+		if (videoInput?.srcObject) {
 			videoInput.srcObject.getTracks().forEach(track => track.stop());
 		}
 	}
 
 	function hasLiveCameraTrack() {
-		return videoInput.srcObject?.getVideoTracks().some(track => track.readyState === 'live') ?? false;
+		return videoInput?.srcObject?.getVideoTracks().some(track => track.readyState === 'live') ?? false;
+	}
+
+	function updateInputTexture(source) {
+		if (!source) return;
+		shader.updateTextures({ u_inputStream: source });
+	}
+
+	function playShader() {
+		const activeShader = shader;
+		activeShader.play(() => {
+			const source = imageInput || videoInput;
+			if (source) activeShader.updateTextures({ u_inputStream: source });
+		});
 	}
 
 	async function replaceCameraInput() {
@@ -631,7 +645,7 @@ async function main(initialVideoStream = null) {
 		}
 		document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 		syncRenderCanvasToSource(videoInput);
-		shader?.updateTextures({ u_inputStream: videoInput });
+		updateInputTexture(videoInput);
 		currentDeviceId = videoInput.srcObject?.getVideoTracks()[0]?.getSettings?.().deviceId ?? currentDeviceId;
 	}
 
@@ -677,7 +691,7 @@ async function main(initialVideoStream = null) {
 			videoInput = await getCameraStream(null, newFacingMode);
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			syncRenderCanvasToSource(videoInput);
-			shader.updateTextures({ u_inputStream: videoInput });
+			updateInputTexture(videoInput);
 			currentFacingMode = newFacingMode;
 			document.body.classList.toggle('flipped', newFacingMode === 'user');
 			await updateCameraList();
@@ -714,7 +728,7 @@ async function main(initialVideoStream = null) {
 			currentDeviceId = nextCamera.deviceId;
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			syncRenderCanvasToSource(videoInput);
-			shader.updateTextures({ u_inputStream: videoInput });
+			updateInputTexture(videoInput);
 		} catch (error) {
 			console.error('Failed to switch to next camera:', error);
 			// Try falling back to facingMode-only constraint
@@ -722,7 +736,7 @@ async function main(initialVideoStream = null) {
 				videoInput = await getCameraStream(null, currentFacingMode);
 				document.body.appendChild(videoInput);
 				syncRenderCanvasToSource(videoInput);
-				shader.updateTextures({ u_inputStream: videoInput });
+				updateInputTexture(videoInput);
 			} catch (fallbackError) {
 				console.error('Failed to fallback to facingMode camera:', fallbackError);
 			}
@@ -887,7 +901,7 @@ async function main(initialVideoStream = null) {
 			shader = newShader;
 			cleanupScene = () => {
 				settingsEl.classList.remove('scene-loading');
-				shader?.destroy();
+				newShader.destroy();
 			};
 			const events = scene.pluginReadyEvents ?? [];
 			if (events.length === 0) {
@@ -906,32 +920,54 @@ async function main(initialVideoStream = null) {
 
 		const currentInput = imageInput || videoInput;
 		syncRenderCanvasToSource(currentInput, { notifyShader: false, scene });
-		scene.initialize(wrappedSetShader, canvas, gl);
+		try {
+			scene.initialize(wrappedSetShader, canvas, gl);
+		} catch (error) {
+			console.error(`Failed to initialize scene "${scene.name}":`, error);
+			settingsEl.classList.remove('scene-loading');
+			if (scenes.length > 1) switchToScene((currentSceneIndex + 1) % scenes.length, skipHashUpdate);
+			return;
+		}
+		if (!shader || !sceneReadyPromise) {
+			console.error(`Scene "${scene.name}" did not provide a shader.`);
+			settingsEl.classList.remove('scene-loading');
+			if (scenes.length > 1) switchToScene((currentSceneIndex + 1) % scenes.length, skipHashUpdate);
+			return;
+		}
 		const userControls = { ...defaultUserControls, ...(scene.controlValues ?? {}) };
 		const textureOptions = scene.history ? { history: scene.history } : undefined;
 
-		shader.initializeTexture('u_inputStream', currentInput, textureOptions);
+		try {
+			shader.initializeTexture('u_inputStream', currentInput, textureOptions);
+		} catch (error) {
+			console.error(`Failed to initialize input texture for scene "${scene.name}":`, error);
+			cleanupScene?.();
+			if (scenes.length > 1) switchToScene((currentSceneIndex + 1) % scenes.length, skipHashUpdate);
+			return;
+		}
 		play = function play() {
-			shader.play(() => {
-				const source = imageInput || videoInput;
-				shader.updateTextures({ u_inputStream: source });
-			});
+			playShader();
 		};
 		play();
 
 		sceneReadyPromise.then(() => {
 			if (loadingSceneIndex !== currentSceneIndex) return;
 			settingsEl.classList.remove('scene-loading');
+			const sceneShader = shader;
 			const cleanupControls = attachControls(scene, getUpdates => {
 				if (isSettingsOpen || isShutterPressed) return;
 				const updates = getUpdates(userControls);
 				Object.assign(userControls, updates);
-				scene.onUpdate?.(userControls, shader);
+				scene.onUpdate?.(userControls, sceneShader);
 			});
 			cleanupScene = () => {
 				cleanupControls();
-				shader.destroy();
+				sceneShader.destroy();
 			};
+		}).catch(error => {
+			if (loadingSceneIndex !== currentSceneIndex) return;
+			console.error(`Scene "${scene.name}" failed while loading:`, error);
+			settingsEl.classList.remove('scene-loading');
 		});
 
 		if (!skipHashUpdate) updateUrlHash(scenes[currentSceneIndex]);
@@ -1035,6 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				splashStart.style.display = 'none';
 			}
 		}
+		if (!stream) return;
 
 		const audioTracks = stream.getAudioTracks();
 		if (audioTracks.length > 0) {
