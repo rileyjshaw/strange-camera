@@ -211,8 +211,8 @@ body:is(.settings-open, .controls-hidden) #controls {
 		90deg,
 		#000 0,
 		#000 var(--slider-feedback-fill),
-		rgba(0, 0, 0, 0.33) var(--slider-feedback-fill),
-		rgba(0, 0, 0, 0.33) 100%
+		rgba(255, 255, 255, 0.1) var(--slider-feedback-fill),
+		rgba(255, 255, 255, 0.1) 100%
 	);
 	border-radius: 4px;
 	font-family: 'Cartograph CF', monospace;
