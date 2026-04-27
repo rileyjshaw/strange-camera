@@ -12,7 +12,7 @@ import fill from './fill';
 import fishbowl from './fishbowl';
 import kaleidoscope from './kaleidoscope';
 import lightTrails from './light-trails';
-// import meshSensor from './mesh-sensor';
+import meshSensor from './mesh-sensor';
 import pixelface from './pixelface';
 import salon from './salon';
 import slitScan from './slit-scan';
@@ -38,7 +38,7 @@ const scenes = [
 	fishbowl,
 	kaleidoscope,
 	lightTrails,
-	// meshSensor,
+	meshSensor,
 	pixelface,
 	salon,
 	slitScan,
