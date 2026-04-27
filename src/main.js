@@ -24,8 +24,11 @@ function updateUrlHash(scene) {
 	window.location.hash = scene.hash;
 }
 
-const urlHash = window.location.hash.slice(1);
-let currentSceneIndex = sceneHashToIndex.get(urlHash) ?? Math.floor(Math.random() * scenes.length);
+function getSceneIndexFromUrlHash() {
+	return sceneHashToIndex.get(window.location.hash.slice(1));
+}
+
+let currentSceneIndex = getSceneIndexFromUrlHash() ?? Math.floor(Math.random() * scenes.length);
 
 const TARGET_CAMERA_WIDTH = 1280;
 const TARGET_CAMERA_HEIGHT = 720;
@@ -996,6 +999,12 @@ async function main(initialVideoStream = null) {
 
 		if (!skipHashUpdate) updateUrlHash(scenes[currentSceneIndex]);
 	}
+
+	window.addEventListener('hashchange', () => {
+		const nextSceneIndex = getSceneIndexFromUrlHash();
+		if (nextSceneIndex === undefined || nextSceneIndex === currentSceneIndex) return;
+		switchToScene(nextSceneIndex, true);
+	});
 
 	document.addEventListener('keydown', e => {
 		if (e.repeat) return;
