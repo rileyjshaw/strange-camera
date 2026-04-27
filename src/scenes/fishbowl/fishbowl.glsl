@@ -4,7 +4,6 @@ precision highp float;
 in vec2 v_uv;
 out vec4 outColor;
 uniform sampler2D u_inputStream;
-uniform vec2 u_resolution;
 uniform float u_shadow;
 
 const float PI = 3.14159265358979323846;
