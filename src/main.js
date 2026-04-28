@@ -123,6 +123,16 @@ function guessCameraFacing(device) {
 	return 'user';
 }
 
+function isCompositeCamera(camera) {
+	const label = camera.label.toLowerCase();
+	return label.includes('dual') || label.includes('triple');
+}
+
+function getCameraCycleList(cameras) {
+	const singleLensCameras = cameras.filter(camera => !isCompositeCamera(camera));
+	return singleLensCameras.length > 0 ? singleLensCameras : cameras;
+}
+
 async function listCameras() {
 	if (!hasCameraPermission) {
 		throw new Error('Webcam stream not yet obtained');
@@ -209,6 +219,26 @@ async function main(initialVideoStream = null) {
 		flipCameraButton.disabled = allCameras.length <= 1;
 	}
 
+	function getCurrentCycleCameras() {
+		return getCameraCycleList(camerasByFacingMode[currentFacingMode]);
+	}
+
+	function syncCurrentCameraIndex(cameras) {
+		if (cameras.length === 0) return;
+
+		const activeTrack = videoInput?.srcObject?.getVideoTracks?.()[0];
+		const activeTrackSettings = activeTrack?.getSettings?.() ?? {};
+		currentDeviceId = activeTrackSettings.deviceId ?? currentDeviceId;
+
+		let index = cameras.findIndex(c => c.deviceId === currentDeviceId);
+		if (index === -1 && currentFacingMode === 'environment') {
+			index = cameras.findIndex(c => c.label.toLowerCase() === 'back camera');
+		}
+		if (index === -1) index = 0;
+
+		currentCameraIndex[currentFacingMode] = index;
+	}
+
 	async function updateCameraList() {
 		allCameras = await listCameras();
 		camerasByFacingMode.user = [];
@@ -224,19 +254,7 @@ async function main(initialVideoStream = null) {
 	}
 
 	await updateCameraList();
-	if (videoInput.srcObject) {
-		const track = videoInput.srcObject.getVideoTracks()[0];
-		if (track) {
-			currentDeviceId = track.getSettings().deviceId;
-			const cameras = camerasByFacingMode[currentFacingMode];
-			const index = cameras.findIndex(c => c.deviceId === currentDeviceId);
-			if (index !== -1) {
-				currentCameraIndex[currentFacingMode] = index;
-			} else if (cameras.length > 0) {
-				currentCameraIndex[currentFacingMode] = 0;
-			}
-		}
-	}
+	syncCurrentCameraIndex(getCurrentCycleCameras());
 
 	document.body.appendChild(videoInput); // HACK: Desktop Safari won’t update the shader otherwise.
 
@@ -706,17 +724,7 @@ async function main(initialVideoStream = null) {
 			currentFacingMode = newFacingMode;
 			document.body.classList.toggle('flipped', newFacingMode === 'user');
 			await updateCameraList();
-			if (videoInput.srcObject) {
-				const track = videoInput.srcObject.getVideoTracks()[0];
-				if (track) {
-					currentDeviceId = track.getSettings().deviceId;
-					const cameras = camerasByFacingMode[currentFacingMode];
-					const index = cameras.findIndex(c => c.deviceId === currentDeviceId);
-					if (index !== -1) {
-						currentCameraIndex[currentFacingMode] = index;
-					}
-				}
-			}
+			syncCurrentCameraIndex(getCurrentCycleCameras());
 		} catch (error) {
 			console.error('Failed to switch camera:', error);
 		}
@@ -727,7 +735,8 @@ async function main(initialVideoStream = null) {
 		if (videoInput && videoInput.src && !videoInput.srcObject) return;
 
 		await updateCameraList();
-		const cameras = camerasByFacingMode[currentFacingMode];
+		const cameras = getCurrentCycleCameras();
+		syncCurrentCameraIndex(cameras);
 		if (cameras.length <= 1) return;
 
 		currentCameraIndex[currentFacingMode] = (currentCameraIndex[currentFacingMode] + 1) % cameras.length;
@@ -740,6 +749,7 @@ async function main(initialVideoStream = null) {
 			document.body.appendChild(videoInput); // HACK: Desktop Safari won't update the shader otherwise.
 			syncRenderCanvasToSource(videoInput);
 			updateInputTexture(videoInput);
+			syncCurrentCameraIndex(cameras);
 		} catch (error) {
 			console.error('Failed to switch to next camera:', error);
 			// Try falling back to facingMode-only constraint
@@ -748,6 +758,7 @@ async function main(initialVideoStream = null) {
 				document.body.appendChild(videoInput);
 				syncRenderCanvasToSource(videoInput);
 				updateInputTexture(videoInput);
+				syncCurrentCameraIndex(cameras);
 			} catch (fallbackError) {
 				console.error('Failed to fallback to facingMode camera:', fallbackError);
 			}
