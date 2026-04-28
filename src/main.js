@@ -389,7 +389,7 @@ async function main(initialVideoStream = null) {
 	async function ensureAacEncoderRegistered() {
 		if (!aacEncoderRegistrationPromise) {
 			aacEncoderRegistrationPromise = import('@mediabunny/aac-encoder').then(({ registerAacEncoder }) =>
-				registerAacEncoder()
+				registerAacEncoder(),
 			);
 		}
 		await aacEncoderRegistrationPromise;
@@ -796,7 +796,15 @@ async function main(initialVideoStream = null) {
 		if (isSettingsOpen) return;
 
 		if (isRecordLocked) {
-			void stopRecording(e);
+			if (e.pointerType === 'mouse') {
+				void stopRecording(e);
+				return;
+			}
+
+			isShutterPressed = true;
+			recordingStartedFromCurrentPress = false;
+			activeShutterPointerId = e.pointerId;
+			shutterButton.setPointerCapture?.(e.pointerId);
 			return;
 		}
 
@@ -869,9 +877,7 @@ async function main(initialVideoStream = null) {
 
 	shutterButton.addEventListener('pointerdown', handleShutterDown);
 	document.addEventListener('pointermove', handleShutterMove);
-	document.addEventListener('pointerup', e => {
-		void handleShutterUp(e);
-	});
+	document.addEventListener('pointerup', handleShutterUp);
 	document.addEventListener('pointercancel', handleShutterLeave);
 	window.addEventListener('pageshow', queueResumeCameraView);
 	document.addEventListener('visibilitychange', () => {
@@ -977,27 +983,29 @@ async function main(initialVideoStream = null) {
 		};
 		play();
 
-		sceneReadyPromise.then(() => {
-			if (loadingSceneIndex !== currentSceneIndex) return;
-			settingsEl.classList.remove('scene-loading');
-			const sceneShader = shader;
-			const cleanupControls = attachControls(scene, getUpdates => {
-				if (isSettingsOpen || isShutterPressed) return;
-				const updates = getUpdates(userControls);
-				Object.assign(userControls, updates);
-				scene.onUpdate?.(userControls, sceneShader);
+		sceneReadyPromise
+			.then(() => {
+				if (loadingSceneIndex !== currentSceneIndex) return;
+				settingsEl.classList.remove('scene-loading');
+				const sceneShader = shader;
+				const cleanupControls = attachControls(scene, getUpdates => {
+					if (isSettingsOpen || isShutterPressed) return;
+					const updates = getUpdates(userControls);
+					Object.assign(userControls, updates);
+					scene.onUpdate?.(userControls, sceneShader);
+				});
+				cleanupScene = () => {
+					cleanupControls();
+					sceneShader.destroy();
+				};
+			})
+			.catch(error => {
+				if (loadingSceneIndex !== currentSceneIndex) return;
+				console.error(`Scene "${scene.name}" failed while loading:`, error);
+				cleanupCurrentScene();
+				settingsEl.classList.remove('scene-loading');
+				fallbackToNextScene();
 			});
-			cleanupScene = () => {
-				cleanupControls();
-				sceneShader.destroy();
-			};
-		}).catch(error => {
-			if (loadingSceneIndex !== currentSceneIndex) return;
-			console.error(`Scene "${scene.name}" failed while loading:`, error);
-			cleanupCurrentScene();
-			settingsEl.classList.remove('scene-loading');
-			fallbackToNextScene();
-		});
 
 		if (!skipHashUpdate) updateUrlHash(scenes[currentSceneIndex]);
 	}
@@ -1068,7 +1076,7 @@ async function main(initialVideoStream = null) {
 		e => {
 			if (e.touches.length === 2) e.preventDefault();
 		},
-		{ passive: false }
+		{ passive: false },
 	);
 
 	switchToScene(currentSceneIndex, true);
