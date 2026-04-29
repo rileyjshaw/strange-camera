@@ -19,6 +19,7 @@ import slitScan from './slit-scan';
 import slow from './slow';
 import sorted from './sorted';
 import sunday from './sunday';
+import tear from './tear';
 import wiggleX from './wiggle x';
 import wiggleY from './wiggle y';
 import wireface from './wireface';
@@ -45,6 +46,7 @@ const scenes = [
 	slow,
 	sorted,
 	sunday,
+	tear,
 	wiggleX,
 	wiggleY,
 	wireface,
