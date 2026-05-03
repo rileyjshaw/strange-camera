@@ -52,7 +52,7 @@ export default {
 		overlayShader.initializeUniform('u_pos', 'float', pos);
 		overlayShader.initializeTexture('u_scan', scanShader);
 
-		scanShader.on('beforeStep', time => {
+		scanShader.on('preStep', time => {
 			if (lastUpdateTime === null) lastUpdateTime = time;
 			const dt = time - lastUpdateTime;
 			lastUpdateTime = time;

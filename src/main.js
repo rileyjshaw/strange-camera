@@ -499,13 +499,13 @@ async function main(initialVideoStream = null) {
 		};
 		recordingFrameState = frameState;
 
-		const handleAfterDraw = () => {
+		const handlePostDraw = () => {
 			void enqueueRecordingFrame();
 		};
 
-		shader.on('afterDraw', handleAfterDraw);
+		shader.on('postDraw', handlePostDraw);
 		cleanupRecordingFrameCapture = () => {
-			shader.off('afterDraw', handleAfterDraw);
+			shader.off('postDraw', handlePostDraw);
 		};
 
 		void enqueueRecordingFrame(true);
