@@ -424,6 +424,14 @@ body.settings-open #slider-feedback {
 .control-button:hover img {
 	opacity: 1;
 }
+.control-button:disabled {
+	cursor: default;
+	opacity: 0.45;
+}
+
+.control-button:disabled img {
+	opacity: 0.55;
+}
 
 #shutter {
 	height: 68px;
@@ -437,7 +445,7 @@ body.settings-open #slider-feedback {
 	width: 40px;
 }
 
-.control-button:hover:not(:active) {
+.control-button:hover:not(:active, :disabled) {
 	background: radial-gradient(
 		circle at 30% 30%,
 		rgba(255, 255, 255, 0.9),
@@ -451,7 +459,7 @@ body.settings-open #slider-feedback {
 	transform: scale(1.04);
 }
 
-.control-button:active {
+.control-button:active:not(:disabled) {
 	background: radial-gradient(
 		circle at 30% 30%,
 		rgba(231, 229, 228, 0.3),

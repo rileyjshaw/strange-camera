@@ -214,6 +214,7 @@ async function main(initialVideoStream = null) {
 	const sceneNext = document.querySelector('#scene-next');
 	const goButton = document.querySelector('#go-button');
 	app.classList.add('ready');
+	shutterButton.disabled = true;
 
 	function updateFlipCameraButton() {
 		flipCameraButton.disabled = allCameras.length <= 1;
@@ -803,6 +804,7 @@ async function main(initialVideoStream = null) {
 	}
 
 	function handleShutterDown(e) {
+		if (shutterButton.disabled) return;
 		e.preventDefault();
 		if (isSettingsOpen) return;
 
@@ -827,6 +829,7 @@ async function main(initialVideoStream = null) {
 		shutterButton.setPointerCapture?.(e.pointerId);
 
 		holdTimeout = setTimeout(() => {
+			if (shutterButton.disabled) return;
 			recordingStartedFromCurrentPress = true;
 			recordingStartPromise = startRecording().finally(() => {
 				recordingStartPromise = null;
@@ -927,6 +930,7 @@ async function main(initialVideoStream = null) {
 		currentSceneIndex = index;
 		const scene = scenes[currentSceneIndex];
 		const loadingSceneIndex = currentSceneIndex;
+		shutterButton.disabled = true;
 		cleanupCurrentScene();
 		settingsEl.classList.add('scene-loading', 'populated');
 		titleEl.textContent = scene.name;
@@ -1009,6 +1013,7 @@ async function main(initialVideoStream = null) {
 					cleanupControls();
 					sceneShader.destroy();
 				};
+				shutterButton.disabled = false;
 			})
 			.catch(error => {
 				if (loadingSceneIndex !== currentSceneIndex) return;
