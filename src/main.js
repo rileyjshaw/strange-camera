@@ -10,8 +10,8 @@ import {
 	Mp4OutputFormat,
 	Output,
 	WebMOutputFormat,
+	canEncodeVideo,
 	getFirstEncodableAudioCodec,
-	getFirstEncodableVideoCodec,
 } from 'mediabunny';
 
 try {
@@ -37,6 +37,10 @@ const HOLD_THRESHOLD_MS = 300;
 const RECORDING_FRAME_RATE = 30;
 const RECORDING_VIDEO_BITRATE = 2_500_000;
 const RECORDING_AUDIO_BITRATE = 128_000;
+const RECORDING_VIDEO_ENCODER_BASE_OPTIONS = {
+	latencyMode: 'realtime',
+};
+const RECORDING_VIDEO_HARDWARE_ACCELERATION_PREFERENCES = ['prefer-hardware', 'no-preference'];
 const RECORDING_MIME_TYPES = {
 	mp4: 'video/mp4',
 	webm: 'video/webm',
@@ -326,17 +330,20 @@ async function main(initialVideoStream = null) {
 	document.body.addEventListener('drop', handleImageDrop);
 
 	async function exportHighRes(e) {
+		if (shutterButton.disabled || !shader) return;
+
+		const activeShader = shader;
 		const sceneName = scenes[currentSceneIndex].name;
 		window.posthog?.capture('take_photo', { scene: sceneName });
-		shader.pause();
+		activeShader.pause();
 		try {
-			await save(shader, `Strange Camera - ${sceneName}`, window.location.href, {
+			await save(activeShader, `Strange Camera - ${sceneName}`, window.location.href, {
 				preventShare: e.pointerType === 'mouse',
 			});
 		} catch (error) {
 			console.error('Failed to export image:', error);
 		} finally {
-			play?.();
+			if (shader === activeShader) play?.();
 		}
 	}
 
@@ -414,6 +421,21 @@ async function main(initialVideoStream = null) {
 		await aacEncoderRegistrationPromise;
 	}
 
+	async function getFirstEncodableRecordingVideoProfile(checkedCodecs, options) {
+		for (const hardwareAcceleration of RECORDING_VIDEO_HARDWARE_ACCELERATION_PREFERENCES) {
+			const videoEncoderOptions = {
+				...RECORDING_VIDEO_ENCODER_BASE_OPTIONS,
+				hardwareAcceleration,
+			};
+			for (const codec of checkedCodecs) {
+				if (await canEncodeVideo(codec, { ...options, ...videoEncoderOptions })) {
+					return { codec, videoEncoderOptions };
+				}
+			}
+		}
+		return null;
+	}
+
 	async function getRecordingProfile(hasAudio) {
 		const videoOptions = {
 			width: canvas.width,
@@ -422,8 +444,8 @@ async function main(initialVideoStream = null) {
 		};
 		const audioOptions = getAudioEncodingProbeConfig();
 
-		const mp4VideoCodec = await getFirstEncodableVideoCodec(['avc', 'hevc'], videoOptions);
-		if (mp4VideoCodec) {
+		const mp4VideoProfile = await getFirstEncodableRecordingVideoProfile(['avc', 'hevc'], videoOptions);
+		if (mp4VideoProfile) {
 			let mp4AudioCodec = null;
 			if (hasAudio) {
 				mp4AudioCodec = await getFirstEncodableAudioCodec(['aac'], audioOptions);
@@ -437,22 +459,24 @@ async function main(initialVideoStream = null) {
 				return {
 					format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
 					extension: 'mp4',
-					videoCodec: mp4VideoCodec,
+					videoCodec: mp4VideoProfile.codec,
+					videoEncoderOptions: mp4VideoProfile.videoEncoderOptions,
 					audioCodec: mp4AudioCodec,
 				};
 			}
 		}
 
-		const webmVideoCodec = await getFirstEncodableVideoCodec(['vp09', 'vp8'], videoOptions);
+		const webmVideoProfile = await getFirstEncodableRecordingVideoProfile(['vp09', 'vp8'], videoOptions);
 		const webmAudioCodec = hasAudio ? await getFirstEncodableAudioCodec(['opus'], audioOptions) : null;
-		if (!webmVideoCodec || (hasAudio && !webmAudioCodec)) {
+		if (!webmVideoProfile || (hasAudio && !webmAudioCodec)) {
 			throw new Error('No compatible Mediabunny recording profile is available in this browser.');
 		}
 
 		return {
 			format: new WebMOutputFormat(),
 			extension: 'webm',
-			videoCodec: webmVideoCodec,
+			videoCodec: webmVideoProfile.codec,
+			videoEncoderOptions: webmVideoProfile.videoEncoderOptions,
 			audioCodec: webmAudioCodec,
 		};
 	}
@@ -467,8 +491,7 @@ async function main(initialVideoStream = null) {
 		const videoSource = new CanvasSource(canvas, {
 			codec: profile.videoCodec,
 			bitrate: RECORDING_VIDEO_BITRATE,
-			latencyMode: 'realtime',
-			hardwareAcceleration: 'prefer-hardware',
+			...profile.videoEncoderOptions,
 		});
 		output.addVideoTrack(videoSource, { frameRate: RECORDING_FRAME_RATE });
 
